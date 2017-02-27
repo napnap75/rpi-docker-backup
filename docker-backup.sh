@@ -98,5 +98,5 @@ if [ $? == 0 ] ; then
 	fi
 else
 	echo "[ERROR] Unable to connect to host $SFTP_HOST"
-	return 1
+	exit 1
 fi
