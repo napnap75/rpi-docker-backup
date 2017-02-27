@@ -12,7 +12,7 @@ sleep_until() {
     sleep $slp
 }
 
-# Check the connection to the host
+# Check the connection to the host and ensure the directory with the name of the node exists and is writeable
 # By the way, this will also load the known_host file with the host key if not already set
 function check_connection {
 	touch test_file.in
@@ -45,23 +45,20 @@ function backup_dir {
 
 # Find all the directories to backup and call backup_dir for each one
 function run_backup {
-	# Get the current node name
-	node_name=$(curl -s --unix-socket /var/run/docker.sock http:/v1.26/info | jq -r ".Name")
-
 	# List all the containers
 	containers=$(curl -s --unix-socket /var/run/docker.sock http:/v1.26/containers/json)
 	for container_id in $(echo $containers | jq ".[].Id") ; do
 		container=$(echo $containers | jq -c ".[] | select(.Id==$container_id)")
 
-		# Get the name and namesapce (in case of a container run in a swarm stack)
+		# Get the name and namespace (in case of a container run in a swarm stack)
 		container_name=$(echo $container | jq -r ".Names | .[0]" | cut -d'.' -f1 | cut -d'/' -f2)
 		namespace=$(echo $container | jq -r ".Labels | .[\"com.docker.stack.namespace\"]")
 
 		# Backup the dirs labelled with "napnap75.backup.dirs"
 		if $(echo $container | jq ".Labels | has(\"napnap75.backup.dirs\")") ; then
-		for dir_name in $(echo $container | jq -r ".Labels | .[\"napnap75.backup.dirs\"]") ; do
+			for dir_name in $(echo $container | jq -r ".Labels | .[\"napnap75.backup.dirs\"]") ; do
 				echo "[INFO] Backing up dir" $dir_name "for container" $container_name
-				backup_dir $dir_name $(echo "dir$dir_name" | sed "s/\//_/g") $node_name
+				backup_dir $dir_name $(echo "dir$dir_name" | sed "s/\//_/g") $1
 			done
 		fi
 
@@ -71,7 +68,7 @@ function run_backup {
 				if [ $namespace != "null" ] ; then volume_name="${namespace}_${volume_name}" ; fi
 				volume_mount=$(echo $container | jq -r ".Mounts[] | select(.Name==\"$volume_name\") | .Source")
 				echo "[INFO] Backing up volume" $volume_name "with mount" $volume_mount "for container" $container_name
-				backup_dir $volume_mount "volume_$volume_name" $node_name
+				backup_dir $volume_mount "volume_$volume_name" $1
 			done
 		fi
 	done
@@ -81,7 +78,6 @@ function run_backup {
 # Get the current node name
 node_name=$(curl -s --unix-socket /var/run/docker.sock http:/v1.26/info | jq -r ".Name")
 
-chmod 400 $SFTP_KEY
 echo "[INFO] Trying to connect to host $SFTP_HOST"
 check_connection $node_name
 if [ $? == 0 ] ; then
@@ -89,10 +85,8 @@ if [ $? == 0 ] ; then
 	echo "[INFO] Backup will start at $start_time every day"
 	while true ; do
 		sleep_until $start_time
-		run_backup
+		run_backup $node_name
 	done
 else
 	echo "[ERROR] Unable to connect to host $SFTP_HOST"
 fi
-
-
