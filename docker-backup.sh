@@ -84,7 +84,7 @@ fi
 echo "[INFO] Trying to connect to host $SFTP_HOST"
 check_connection $SFTP_DIR
 if [ $? == 0 ] ; then
-	if [ "$1" -eq "run-once" ] ; then
+	if [ "$1" == "run-once" ] ; then
 		# Run only once, mainly for tests purpose
 		start_time=$(($RANDOM % 7)):$(($RANDOM % 60))
 		echo "[INFO] Backup would have started at $start_time every day"
