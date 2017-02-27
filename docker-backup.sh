@@ -17,6 +17,7 @@ sleep_until() {
 function check_connection {
 	touch test_file.in
 	sftp -oStrictHostKeyChecking=no -oHostKeyAlgorithms=ssh-rsa -q -b - -i $SFTP_KEY -P $SFTP_PORT $SFTP_USER@$SFTP_HOST <<EOF
+mkdir $1
 put test_file.in $1/test_file.in
 rename $1/test_file.in $1/test_file.out
 get $1/test_file.out
@@ -77,6 +78,7 @@ function run_backup {
 
 # Get the current node name
 node_name=$(curl -s --unix-socket /var/run/docker.sock http:/v1.26/info | jq -r ".Name")
+if [ "$node_name" -eq "" ] ; then node_name="test" ; fi
 
 # First check the connection
 echo "[INFO] Trying to connect to host $SFTP_HOST"
