@@ -82,7 +82,7 @@ fi
 
 # First check the connection
 echo "[INFO] Trying to connect to host $SFTP_HOST"
-check_connection $node_name
+check_connection $SFTP_DIR
 if [ $? == 0 ] ; then
 	if [ "$1" -eq "run-once" ] ; then
 		# Run only once, mainly for tests purpose
