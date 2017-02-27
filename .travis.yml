@@ -8,8 +8,9 @@ install:
 script:
   - docker build -t napnap75/rpi-docker-backup:latest .
   - docker images
-  - docker run -d --name sftp-test-server -e SSH_USER_FORCE_SFTP=true jdeathe/centos-ssh:centos-7
+  - docker run -d -p 2021:22 --name sftp-test-server -e SSH_USER_FORCE_SFTP=true jdeathe/centos-ssh:centos-7
   - curl -LSs https://raw.githubusercontent.com/mitchellh/vagrant/master/keys/vagrant > id_rsa_insecure && chmod 600 id_rsa_insecure
+  - for i in {1..10} ; do sleep 10 ; echo "exit" | sftp -b - -i id_rsa_insecure -o Port=2021 -o StrictHostKeyChecking=no app-admin@localhost ; done
   - docker run --link sftp-test-server -v $PWD/id_rsa_insecure:/root/private-key -e SFTP_KEY=/root/private-key -e SFTP_PORT=22 -e SFTP_USER=app-admin -e SFTP_HOST=sftp-test-server --name docker-backup napnap75/rpi-docker-backup:latest /usr/bin/docker-backup.sh run-once
   - docker logs sftp-test-server
   - docker logs docker-backup
