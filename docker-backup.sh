@@ -78,7 +78,8 @@ function run_backup {
 
 # Get the current node name
 node_name=$(curl -s --unix-socket /var/run/docker.sock http:/v1.26/info | jq -r ".Name")
-if [ "$node_name" -eq "" ] ; then node_name="test" ; fi
+echo "[DEBUG] Node name is '$node_name'"
+if [ -z "$node_name" ] ; then node_name="test" ; fi
 
 # First check the connection
 echo "[INFO] Trying to connect to host $SFTP_HOST"
