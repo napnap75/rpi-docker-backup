@@ -75,18 +75,30 @@ function run_backup {
 }
 
 
-# Get the current node name
-node_name=$(curl -s --unix-socket /var/run/docker.sock http:/v1.26/info | jq -r ".Name")
+# If the SFTP_DIR is not provided, use the current docker node name
+if [ -z "$SFTP_DIR" ] ; then
+	SFTP_DIR=$(curl -s --unix-socket /var/run/docker.sock http:/v1.26/info | jq -r ".Name")
+fi
 
+# First check the connection
 echo "[INFO] Trying to connect to host $SFTP_HOST"
-check_connection $node_name
+check_connection $SFTP_DIR
 if [ $? == 0 ] ; then
-	start_time=$(($RANDOM % 7)):$(($RANDOM % 60))
-	echo "[INFO] Backup will start at $start_time every day"
-	while true ; do
-		sleep_until $start_time
-		run_backup $node_name
-	done
+	if [ "$1" == "run-once" ] ; then
+		# Run only once, mainly for tests purpose
+		start_time=$(($RANDOM % 7)):$(($RANDOM % 60))
+		echo "[INFO] Backup would have started at $start_time every day"
+		run_backup $SFTP_DIR
+	else
+		# Run everyday at $start_time 
+		start_time=$(($RANDOM % 7)):$(($RANDOM % 60))
+		echo "[INFO] Backup will start at $start_time every day"
+		while true ; do
+			sleep_until $start_time
+			run_backup $SFTP_DIR
+		done
+	fi
 else
 	echo "[ERROR] Unable to connect to host $SFTP_HOST"
+	exit 1
 fi

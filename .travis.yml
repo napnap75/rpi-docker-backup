@@ -6,8 +6,17 @@ install:
   - docker run --rm --privileged multiarch/qemu-user-static:register
 
 script:
+# Build the image
   - docker build -t napnap75/rpi-docker-backup:latest .
   - docker images
+# Test it
+  - docker run -d -p 2021:22 --name sftp-test-server -e SSH_USER_FORCE_SFTP=true jdeathe/centos-ssh:centos-7
+  - curl -LSs https://raw.githubusercontent.com/mitchellh/vagrant/master/keys/vagrant > id_rsa_insecure && chmod 600 id_rsa_insecure
+  - sleep 30
+  - docker run --link sftp-test-server -v $PWD/id_rsa_insecure:/root/private-key -e SFTP_KEY=/root/private-key -e SFTP_PORT=22 -e SFTP_USER=app-admin -e SFTP_HOST=sftp-test-server -e SFTP_DIR=_data --name docker-backup --label "napnap75.backup.dirs=$PWD" napnap75/rpi-docker-backup:latest /usr/bin/docker-backup.sh run-once
+  - docker logs sftp-test-server
+  - docker logs docker-backup
+  - docker stop sftp-test-server
 
 after_success:
   - docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
@@ -15,4 +24,3 @@ after_success:
   - export CURRENTDATE=$(date +%y%m%d)
   - docker tag napnap75/rpi-docker-backup:latest napnap75/rpi-docker-backup:$CURRENTDATE
   - docker push napnap75/rpi-docker-backup:$CURRENTDATE
-  
