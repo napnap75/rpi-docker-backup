@@ -80,6 +80,10 @@ if [ -z "$SFTP_DIR" ] ; then
 	SFTP_DIR=$(curl -s --unix-socket /var/run/docker.sock http:/v1.26/info | jq -r ".Name")
 fi
 
+cp $SFTP_KEY /tmp/foreign_host_key
+chmod 400 /tmp/foreign_host_key
+SFTP_KEY=/tmp/foreign_host_key
+
 # First check the connection
 echo "[INFO] Trying to connect to host $SFTP_HOST"
 check_connection $SFTP_DIR
