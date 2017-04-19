@@ -36,8 +36,8 @@ EOF
 function backup_dir {
 	# Check if the dir to backup is mounted as a subdirectory of /root inside this container
 	if [ -d "/root_fs$1" ] ; then
-		echo "[DEBUG] duplicity -v2 --no-print-statistics --allow-source-mismatch --no-encryption --ssh-options=\"-i $SFTP_KEY\" /root_fs$1 sftp://$SFTP_USER@$SFTP_HOST:$SFTP_PORT/$3/$2"
-		duplicity -v2 --no-print-statistics --allow-source-mismatch --no-encryption --ssh-options="-i $SFTP_KEY" /root_fs$1 sftp://$SFTP_USER@$SFTP_HOST:$SFTP_PORT/$3/$2
+		echo "[DEBUG] duplicity -v2 --full-if-older-than 1M --no-print-statistics --allow-source-mismatch --no-encryption --ssh-options=\"-i $SFTP_KEY\" /root_fs$1 sftp://$SFTP_USER@$SFTP_HOST:$SFTP_PORT/$3/$2"
+		duplicity -v2 --full-if-older-than 1M --no-print-statistics --allow-source-mismatch --no-encryption --ssh-options="-i $SFTP_KEY" /root_fs$1 sftp://$SFTP_USER@$SFTP_HOST:$SFTP_PORT/$3/$2
 	else
 		echo "[ERROR] Directory" $1 "not found. Have you mounted the root fs from your host with the following option : '-v /:/root_fs:ro' ?"
 	fi
