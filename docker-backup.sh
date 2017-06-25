@@ -88,7 +88,7 @@ echo "IdentityFile $SFTP_KEY" >> /root/.ssh/config
 
 # First check the connection
 echo "[INFO] Trying to connect to host $SFTP_HOST"
-check_connection $SFTP_DIR
+check_connection $NODE_NAME
 if [ $? == 0 ] ; then
 	if [ "$1" == "run-once" ] ; then
 		# Run only once, mainly for tests purpose
