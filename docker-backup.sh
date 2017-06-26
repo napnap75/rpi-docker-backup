@@ -35,10 +35,10 @@ EOF
 # Backup one directory using duplicity
 function backup_dir {
 	# Check if the dir to backup is mounted as a subdirectory of /root inside this container
-	if [ -d "/root_fs$2" ] ; then
-		restic -p "$RESTIC_PASSWORD" --hostname $1 backup /root_fs$2
+	if [ -d "/root_fs$1" ] ; then
+		restic -p "$RESTIC_PASSWORD" backup /root_fs$1
 	else
-		echo "[ERROR] Directory" $2 "not found. Have you mounted the root fs from your host with the following option : '-v /:/root_fs:ro' ?"
+		echo "[ERROR] Directory" $1 "not found. Have you mounted the root fs from your host with the following option : '-v /:/root_fs:ro' ?"
 	fi
 }
 
@@ -57,7 +57,7 @@ function run_backup {
 		if $(echo $container | jq ".Labels | has(\"napnap75.backup.dirs\")") ; then
 			for dir_name in $(echo $container | jq -r ".Labels | .[\"napnap75.backup.dirs\"]") ; do
 				echo "[INFO] Backing up dir" $dir_name "for container" $container_name
-				backup_dir $NODE_NAME $dir_name
+				backup_dir $dir_name
 			done
 		fi
 
@@ -67,7 +67,7 @@ function run_backup {
 				if [ $namespace != "null" ] ; then volume_name="${namespace}_${volume_name}" ; fi
 				volume_mount=$(echo $container | jq -r ".Mounts[] | select(.Name==\"$volume_name\") | .Source")
 				echo "[INFO] Backing up volume" $volume_name "with mount" $volume_mount "for container" $container_name
-				backup_dir $NODE_NAME $volume_mount
+				backup_dir $volume_mount
 			done
 		fi
 	done
@@ -98,14 +98,14 @@ fi
 		# Run only once, mainly for tests purpose
 		start_time=$(($RANDOM % 7)):$(($RANDOM % 60))
 		echo "[INFO] Backup would have started at $start_time every day"
-		run_backup $NODE_NAME
+		run_backup
 	else
 		# Run everyday at $start_time
 		start_time=$(($RANDOM % 7)):$(($RANDOM % 60))
 		echo "[INFO] Backup will start at $start_time every day"
 		while true ; do
 			sleep_until $start_time
-			run_backup $NODE_NAME
+			run_backup
 		done
 	fi
 #else
