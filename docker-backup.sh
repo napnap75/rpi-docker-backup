@@ -14,6 +14,8 @@ sleep_until() {
 
 # Check the connection to the host and ensure the repository is created
 function check_connection {
+	# First check if the repository exist and create it otherwise
+	# NB : this will ignore any other error
 	restic -p "$RESTIC_PASSWORD" check &> restic_check.log
 	if grep -q "Is there a repository at the following location" restic_check.log ; then
 		echo "[INFO] Repository not found, creating it"
@@ -25,6 +27,7 @@ function check_connection {
 	fi
 	rm restic_check.log
 
+	# Then check the connection to the repository
 	restic -p "$RESTIC_PASSWORD" check
 	return $?
 }
@@ -70,7 +73,7 @@ function run_backup {
 	done
 }
 
-# Set the hostname to the node name when user with Docker Swarm
+# Set the hostname to the node name when used with Docker Swarm
 NODE_NAME=$(curl -s --unix-socket /var/run/docker.sock http:/v1.26/info | jq -r ".Name")
 if [[ "$NODE_NAME" != "" ]] ; then HOSTNAME="$NODE_NAME" ; fi
 
