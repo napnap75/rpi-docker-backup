@@ -90,6 +90,8 @@ if [[ "$RESTIC_REPOSITORY" = sftp:* ]] ; then
 
 	echo "[DEBUG] Updated /root/.ssh/config"
 	cat /root/.ssh/config
+	
+	echo "ls" | sftp -oStrictHostKeyChecking=no -v -b - app-admin@sftp-test-server
 fi
 
 # First check the connection and the repository
