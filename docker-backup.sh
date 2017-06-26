@@ -87,6 +87,9 @@ if [[ "$RESTIC_REPOSITORY" = sftp:* ]] ; then
 	echo "Host $SFTP_HOST" > /root/.ssh/config
 	if [[ "$SFTP_PORT" != "" ]] ; then echo "Port $SFTP_PORT" >> /root/.ssh/config ; fi
 	echo "IdentityFile $SFTP_KEY" >> /root/.ssh/config
+
+	echo "[DEBUG] Updated /root/.ssh/config"
+	cat /root/.ssh/config
 fi
 
 # First check the connection and the repository
