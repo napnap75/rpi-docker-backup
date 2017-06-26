@@ -2,14 +2,14 @@
 
 # Sleep until the given time of the day (or next day)
 sleep_until() {
-    local slp tzoff now
-    local hms=(${1//:/ })
-    printf -v now '%(%s)T' -1
-    printf -v tzoff '%(%z)T\n' $now
-    tzoff=$((0${tzoff:0:1}(3600*${tzoff:1:2}+60*${tzoff:3:2})))
-    slp=$(((86400+(now-now%86400)+10#$hms*3600+10#${hms[1]}*60+${hms[2]}-tzoff-now)%86400))
-    printf 'sleep %ss, -> %(%c)T\n' $slp $((now+slp))
-    sleep $slp
+	local slp tzoff now
+	local hms=(${1//:/ })
+	printf -v now '%(%s)T' -1
+	printf -v tzoff '%(%z)T\n' $now
+	tzoff=$((0${tzoff:0:1}(3600*${tzoff:1:2}+60*${tzoff:3:2})))
+	slp=$(((86400+(now-now%86400)+10#$hms*3600+10#${hms[1]}*60+${hms[2]}-tzoff-now)%86400))
+	printf 'sleep %ss, -> %(%c)T\n' $slp $((now+slp))
+	sleep $slp
 }
 
 # Check the connection to the host and ensure the repository is created
@@ -79,6 +79,7 @@ if [[ "$NODE_NAME" != "" ]] ; then HOSTNAME="$NODE_NAME" ; fi
 
 # When used with SFTP
 if [[ "$RESTIC_REPOSITORY" = sftp:* ]] ; then
+	# Copy the key and make it readable only by the current user to meet SSH security requirements
 	cp $SFTP_KEY /tmp/foreign_host_key
 	chmod 400 /tmp/foreign_host_key
 	SFTP_KEY=/tmp/foreign_host_key
