@@ -14,10 +14,19 @@ sleep_until() {
 
 # Check the connection to the host and ensure the repository is created
 function check_connection {
-	restic -p "$RESTIC_PASSWORD" check
-	echo "[DEBUG] Return code of the check function is : $?"
+	restic -p "$RESTIC_PASSWORD" check &> restic_check.log
+	if grep --quiet "Is there a repository at the following location" restic_check.log ; then
+		echo "[INFO] Repository not found, creating it"
+		restic -p "$RESTIC_PASSWORD" init
+		if [ $? -ne 0 ]; then
+			echo "[ERROR] Unable to create repository"
+			return 1
+		fi
+	fi
+	rm restic_check.log
 
-	return 1
+	restic -p "$RESTIC_PASSWORD" check
+	return $?
 }
 
 # Backup one directory using duplicity
