@@ -82,7 +82,7 @@ if [[ "$RESTIC_REPOSITORY" =~ "^sftp:.*" ]] ; then
 
 	if [ ! -d "/root/.ssh" ] ; then mkdir /root/.ssh ; fi
 	echo "Host $SFTP_HOST" > /root/.ssh/config
-	echo "Port $SFTP_PORT" >> /root/.ssh/config
+	if [[ "$SFTP_PORT" != "" ]] ; then echo "Port $SFTP_PORT" >> /root/.ssh/config ; fi
 	echo "IdentityFile $SFTP_KEY" >> /root/.ssh/config
 fi
 
