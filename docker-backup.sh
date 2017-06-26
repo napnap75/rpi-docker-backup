@@ -29,7 +29,7 @@ function check_connection {
 	return $?
 }
 
-# Backup one directory using duplicity
+# Backup one directory using Restic
 function backup_dir {
 	# Check if the dir to backup is mounted as a subdirectory of /root inside this container
 	if [ -d "/root_fs$1" ] ; then
@@ -70,11 +70,11 @@ function run_backup {
 	done
 }
 
-env | sort
-
+# Set the hostname to the node name when user with Docker Swarm
 NODE_NAME=$(curl -s --unix-socket /var/run/docker.sock http:/v1.26/info | jq -r ".Name")
 if [[ "$NODE_NAME" != "" ]] ; then HOSTNAME="$NODE_NAME" ; fi
 
+# When used with SFTP
 if [[ "$RESTIC_REPOSITORY" =~ "^sftp:.*" ]] ; then
 	cp $SFTP_KEY /tmp/foreign_host_key
 	chmod 400 /tmp/foreign_host_key
@@ -82,7 +82,6 @@ if [[ "$RESTIC_REPOSITORY" =~ "^sftp:.*" ]] ; then
 
 	if [ ! -d "/root/.ssh" ] ; then mkdir /root/.ssh ; fi
 	echo "Host $SFTP_HOST" > /root/.ssh/config
-	echo "User $SFTP_USER" >> /root/.ssh/config
 	echo "Port $SFTP_PORT" >> /root/.ssh/config
 	echo "IdentityFile $SFTP_KEY" >> /root/.ssh/config
 fi
