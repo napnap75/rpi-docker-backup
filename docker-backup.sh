@@ -78,9 +78,9 @@ NODE_NAME=$(curl -s --unix-socket /var/run/docker.sock http:/v1.26/info | jq -r 
 if [[ "$NODE_NAME" != "" ]] ; then HOSTNAME="$NODE_NAME" ; fi
 
 echo "[DEBUG] Restic repository : $RESTIC_REPOSITORY"
-if [[ "$RESTIC_REPOSITORY" =~ "^sftp:.*" ]] ; then
+if [[ "$RESTIC_REPOSITORY" = sftp:* ]] ; then
 	echo "[DEBUG] Match 1"
-elif [[ "$RESTIC_REPOSITORY" =~ "^sftp\:.*" ]] ; then
+elif [[ "$RESTIC_REPOSITORY" = sftp\:* ]] ; then
 	echo "[DEBUG] Match 2"
 else
 	echo "[DEBUG] No match"
