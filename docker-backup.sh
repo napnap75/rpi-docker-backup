@@ -15,7 +15,7 @@ sleep_until() {
 # Check the connection to the host and ensure the repository is created
 function check_connection {
 	restic -p "$RESTIC_PASSWORD" check &> restic_check.log
-	if grep --quiet "Is there a repository at the following location" restic_check.log ; then
+	if grep -q "Is there a repository at the following location" restic_check.log ; then
 		echo "[INFO] Repository not found, creating it"
 		restic -p "$RESTIC_PASSWORD" init
 		if [ $? -ne 0 ]; then
