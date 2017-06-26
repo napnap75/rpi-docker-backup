@@ -73,23 +73,26 @@ function run_backup {
 	done
 }
 
+env | sort
 
 NODE_NAME=$(curl -s --unix-socket /var/run/docker.sock http:/v1.26/info | jq -r ".Name")
 
-cp $SFTP_KEY /tmp/foreign_host_key
-chmod 400 /tmp/foreign_host_key
-SFTP_KEY=/tmp/foreign_host_key
+if [[ "$RESTIC_REPOSITORY" =~ "^sftp:.*" ]] ; then
+	cp $SFTP_KEY /tmp/foreign_host_key
+	chmod 400 /tmp/foreign_host_key
+	SFTP_KEY=/tmp/foreign_host_key
 
-if [ ! -d "/root/.ssh" ] ; then mkdir /root/.ssh ; fi
-echo "Host $SFTP_HOST" > /root/.ssh/config
-echo "User $SFTP_USER" >> /root/.ssh/config
-echo "Port $SFTP_PORT" >> /root/.ssh/config
-echo "IdentityFile $SFTP_KEY" >> /root/.ssh/config
+	if [ ! -d "/root/.ssh" ] ; then mkdir /root/.ssh ; fi
+	echo "Host $SFTP_HOST" > /root/.ssh/config
+	echo "User $SFTP_USER" >> /root/.ssh/config
+	echo "Port $SFTP_PORT" >> /root/.ssh/config
+	echo "IdentityFile $SFTP_KEY" >> /root/.ssh/config
+fi
 
 # First check the connection
-echo "[INFO] Trying to connect to host $SFTP_HOST"
-check_connection $NODE_NAME
-if [ $? == 0 ] ; then
+#echo "[INFO] Trying to connect to host $SFTP_HOST"
+#check_connection $NODE_NAME
+#if [ $? == 0 ] ; then
 	if [ "$1" == "run-once" ] ; then
 		# Run only once, mainly for tests purpose
 		start_time=$(($RANDOM % 7)):$(($RANDOM % 60))
@@ -104,7 +107,7 @@ if [ $? == 0 ] ; then
 			run_backup $NODE_NAME
 		done
 	fi
-else
-	echo "[ERROR] Unable to connect to host $SFTP_HOST"
-	exit 1
-fi
+#else
+#	echo "[ERROR] Unable to connect to host $SFTP_HOST"
+#	exit 1
+#fi
