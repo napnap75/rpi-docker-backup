@@ -16,10 +16,12 @@ sleep_until() {
 function check_connection {
 	# First check if the repository exist and create it otherwise
 	# NB : this will ignore any other error
-	restic -p "$RESTIC_PASSWORD" check &> restic_check.log
+	restic check &> restic_check.log
 	if grep -q "Is there a repository at the following location" restic_check.log ; then
-		echo "[INFO] Repository not found, creating it"
-		restic -p "$RESTIC_PASSWORD" init
+		# Manually create the repository after a random amount of time to make sure two nodes will not try to do it at the same time
+		echo "[INFO] Repository not found, creating it ... after waiting a while"
+		sleep $(($RANDOM % 600))
+		restic init
 		if [ $? -ne 0 ]; then
 			echo "[ERROR] Unable to create repository"
 			return 1
@@ -28,7 +30,7 @@ function check_connection {
 	rm restic_check.log
 
 	# Then check the connection to the repository
-	restic -p "$RESTIC_PASSWORD" check
+	restic check
 	return $?
 }
 
@@ -36,7 +38,7 @@ function check_connection {
 function backup_dir {
 	# Check if the dir to backup is mounted as a subdirectory of /root inside this container
 	if [ -d "/root_fs$1" ] ; then
-		restic -p "$RESTIC_PASSWORD" backup /root_fs$1
+		restic backup /root_fs$1
 	else
 		echo "[ERROR] Directory" $1 "not found. Have you mounted the root fs from your host with the following option : '-v /:/root_fs:ro' ?"
 	fi

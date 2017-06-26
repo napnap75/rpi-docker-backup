@@ -34,7 +34,48 @@ On your other containers (because the Docker socket is mounted on the backup con
 - `napnap75.backup.volumes=%VOLUME_NAME%, %ANOTHER_VOLUME%` to backup Docker volumes
 
 # Examples
-## Backup a directory to a local repo (docker run)
+## Backup a directory to a local repo (docker run on a single host)
 1. Run the backup script container : `docker run -v /home/backup:/restic_repo -e "RESTIC_REPOSITORY=/restic_repo" -v /home/backup/password:/restic_pass -e "RESTIC_PASSWORD=/restic_pass" -v /var/run/docker.sock:/var/run/docker.sock:ro -v /:/root_fs:ro napnap75/rpi-docker-backup:latest`
 2. Run a Transmission container and tell the backup script to backup its home directory : `docker run -v /home/transmission:/home -v /home/media:/media --label "napnap75.backup.dirs=/home/transmission" napnap75/rpi-transmission:latest`
 
+## Backup a volume to a sftp repo (docker stack on a swarm)
+This stack file will run one backup instance on each node of the swarm and backup the configuration volume of the portainer container.
+```
+version: "3.1"
+services :
+  portainer:
+    image: portainer/portainer:linux-arm
+    ports:
+      - 9000:9000
+    volumes:
+      - portainer_data:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    labels:
+      - "napnap75.backup.volumes=portainer_data"
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+  docker-backup:
+    image: napnap75/rpi-docker-backup:latest
+    volumes:
+      - /:/root_fs:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - SFTP_HOST=myhost.com
+      - SFTP_PORT=22
+      - SFTP_KEY=/run/secrets/private.key
+      - RESTIC_PASSWORD=/run/secrets/restic.password
+      - RESTIC_REPOSITORY=sftp:myuser@myhost.com:restic
+    secrets:
+      - private.key
+      - restic.password
+    deploy:
+      mode: global
+secrets:
+  private.key:
+    external: true
+  restic.password:
+    external: true
+volumes:
+  portainer_data:
+```
