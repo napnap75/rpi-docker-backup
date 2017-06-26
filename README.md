@@ -7,7 +7,7 @@ This image is based [my own Alpine Linux base image](https://hub.docker.com/r/na
 This image contains :
 - [Restic](https://restic.github.io/).
 
-This image runs a backup every night (between midnight and 7 AM) of the followin parts of all the containers running on the host :
+This image runs a backup every night (between midnight and 7 AM) of the following parts of all the containers running on the host :
 - The volumes specified by the label `napnap75.backup.volumes`
 - The directories specified by the label `napnap75.backup.dirs`
 
@@ -36,5 +36,5 @@ On your other containers (because the Docker socket is mounted on the backup con
 # Examples
 ## Backup a directory to a local repo (docker run)
 1. Run the backup script container : `docker run -v /home/backup:/restic_repo -e "RESTIC_REPOSITORY=/restic_repo" -v /home/backup/password:/restic_pass -e "RESTIC_PASSWORD=/restic_pass" -v /var/run/docker.sock:/var/run/docker.sock:ro -v /:/root_fs:ro napnap75/rpi-docker-backup:latest`
-2. Run a Transmission container and tell the backup script to backup its home directory : `docker run -v /home/transmission:/home -v /home/media:/media --label "napnap75.backup.dirs=/home" napnap75/rpi-transmission:latest`
+2. Run a Transmission container and tell the backup script to backup its home directory : `docker run -v /home/transmission:/home -v /home/media:/media --label "napnap75.backup.dirs=/home/transmission" napnap75/rpi-transmission:latest`
 
