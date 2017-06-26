@@ -2,25 +2,35 @@ language: bash
 services: docker
 sudo: required
 
+# Install QEmu to allow Travis (on x86 systems) to build ARM images
 install:
   - docker run --rm --privileged multiarch/qemu-user-static:register
 
+# Build and test the image
 script:
-# Build the image
   - docker build -t napnap75/rpi-docker-backup:latest .
   - docker images
-# Test it
+  - docker run --rm napnap75/rpi-docker-backup:latest restic version
+# Prepare the tests
+  - echo "1234567890" > restic_pass
+  - mkdir backup ; touch backup/file
+# Test it localy
+  - docker run -v $PWD/restic_repo:/restic_repo -e "RESTIC_REPOSITORY=/restic_repo" -v $PWD/restic_pass:/restic_pass -e "RESTIC_PASSWORD=/restic_pass" --name docker-backup-local --label "napnap75.backup.dirs=$PWD/backup" -v /var/run/docker.sock:/var/run/docker.sock:ro -v /:/root_fs:ro napnap75/rpi-docker-backup:latest /usr/bin/docker-backup.sh run-once
+  - ls -al restic_repo
+# Test it with SFTP
   - docker run -d -p 2021:22 --name sftp-test-server -e SSH_USER_FORCE_SFTP=true jdeathe/centos-ssh:centos-7
   - curl -LSs https://raw.githubusercontent.com/mitchellh/vagrant/master/keys/vagrant > id_rsa_insecure && chmod 600 id_rsa_insecure
   - sleep 30
-  - docker run --link sftp-test-server -v $PWD/id_rsa_insecure:/root/private-key -e SFTP_KEY=/root/private-key -e SFTP_PORT=22 -e SFTP_USER=app-admin -e SFTP_HOST=sftp-test-server -e SFTP_DIR=_data --name docker-backup --label "napnap75.backup.dirs=$PWD" napnap75/rpi-docker-backup:latest /usr/bin/docker-backup.sh run-once
-  - docker logs sftp-test-server
-  - docker logs docker-backup
-  - docker stop sftp-test-server
+  - docker run --link sftp-test-server -e "RESTIC_REPOSITORY=sftp:app-admin@sftp-test-server:_data" -v $PWD/restic_pass:/restic_pass -e "RESTIC_PASSWORD=/restic_pass" -v $PWD/id_rsa_insecure:/root/private-key -e "SFTP_KEY=/root/private-key" -e "SFTP_PORT=22" -e "SFTP_HOST=sftp-test-server" --name docker-backup-sftp --label "napnap75.backup.dirs=$PWD/backup" -v /var/run/docker.sock:/var/run/docker.sock:ro -v /:/root_fs:ro napnap75/rpi-docker-backup:latest /usr/bin/docker-backup.sh run-once
+  - docker diff sftp-test-server
 
+# If successful, push the images
 after_success:
-  - docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
-  - docker push napnap75/rpi-docker-backup:latest
-  - export CURRENTDATE=$(date +%y%m%d)
-  - docker tag napnap75/rpi-docker-backup:latest napnap75/rpi-docker-backup:$CURRENTDATE
-  - docker push napnap75/rpi-docker-backup:$CURRENTDATE
+  - if [ "$TRAVIS_BRANCH" == "master" ]; then
+      docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD" ;
+      docker push napnap75/rpi-docker-backup:latest ;
+      VERSION=$(docker run --rm napnap75/rpi-docker-backup:latest restic version | grep restic | egrep -o "[0-9]+\.[0-9]+\.[0-9]+") ;
+      docker tag napnap75/rpi-docker-backup:latest napnap75/rpi-docker-backup:${VERSION} ;
+      docker push napnap75/rpi-docker-backup:${VERSION} ;
+    fi
+    
