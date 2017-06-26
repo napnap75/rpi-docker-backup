@@ -12,24 +12,12 @@ sleep_until() {
     sleep $slp
 }
 
-# Check the connection to the host and ensure the directory with the name of the node exists and is writeable
-# By the way, this will also load the known_host file with the host key if not already set
+# Check the connection to the host and ensure the repository is created
 function check_connection {
-	touch test_file.in
-	sftp -oStrictHostKeyChecking=no -oHostKeyAlgorithms=ssh-rsa -q -b - -i $SFTP_KEY -P $SFTP_PORT $SFTP_USER@$SFTP_HOST <<EOF
-put test_file.in $1/test_file.in
-rename $1/test_file.in $1/test_file.out
-get $1/test_file.out
-rm $1/test_file.out
-exit
-EOF
-	if [ -f "test_file.out" ] ; then
-		rm test_file.in test_file.out
-		return 0
-	else
-		rm test_file.in
-		return 1
-	fi
+	restic -p "$RESTIC_PASSWORD" check
+	echo "[DEBUG] Return code of the check function is : $?"
+
+	return 1
 }
 
 # Backup one directory using duplicity
@@ -90,10 +78,10 @@ if [[ "$RESTIC_REPOSITORY" =~ "^sftp:.*" ]] ; then
 	echo "IdentityFile $SFTP_KEY" >> /root/.ssh/config
 fi
 
-# First check the connection
-#echo "[INFO] Trying to connect to host $SFTP_HOST"
-#check_connection $NODE_NAME
-#if [ $? == 0 ] ; then
+# First check the connection and the repository
+echo "[INFO] Trying to connect to repository"
+check_connection
+if [ $? == 0 ] ; then
 	if [ "$1" == "run-once" ] ; then
 		# Run only once, mainly for tests purpose
 		start_time=$(($RANDOM % 7)):$(($RANDOM % 60))
@@ -108,7 +96,7 @@ fi
 			run_backup
 		done
 	fi
-#else
-#	echo "[ERROR] Unable to connect to host $SFTP_HOST"
-#	exit 1
-#fi
+else
+	echo "[ERROR] Unable to connect to repository"
+	exit 1
+fi
