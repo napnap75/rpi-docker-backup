@@ -14,22 +14,38 @@ sleep_until() {
 
 # Check the connection to the host and ensure the repository is created
 function check_connection {
-	# First check if the repository exist and create it otherwise
-	# NB : this will ignore any other error
+	# First check if the repository exist and wait if it is locked
 	restic check &> restic_check.log
+
+	while grep -q "repository is already locked by" restic_check.log ; do
+		echo "[INFO] Repository locked, waiting ..."
+		sleep $(($RANDOM % 60))
+		restic check &> restic_check.log
+	done
+
+	# If the repository does not exist, create it (and ignore any other kind of error)
 	if grep -q "Is there a repository at the following location" restic_check.log ; then
-		# Manually create the repository after a random amount of time to make sure two nodes will not try to do it at the same time
-		echo "[INFO] Repository not found, creating it ... after waiting a while"
-		sleep $(($RANDOM % 600))
-		restic init
-		if [ $? -ne 0 ]; then
-			echo "[ERROR] Unable to create repository"
-			return 1
+		# Wait a random amount of time to make sure two nodes will not try to do it at the same time
+		echo "[INFO] Repository not found, waiting a bit before trying to create it ..."
+		sleep $(($RANDOM % 300))
+
+		# Check again to make sure the repository has not been initialised while waiting
+		restic check &> restic_check.log
+		if grep -q "Is there a repository at the following location" restic_check.log ; then
+			# Manually create the repository
+			echo "[INFO] ... It's time, creating it"
+			restic init
+			if [ $? -ne 0 ]; then
+				echo "[ERROR] Unable to create repository"
+				return $?
+			fi
+		else
+			echo "[INFO] ... Repository has been created while waiting so I have nothing to do"
 		fi
 	fi
 	rm restic_check.log
 
-	# Then check the connection to the repository
+	# Then check the connection to the repository and return an error to stop the script if the check failed
 	restic check
 	return $?
 }
@@ -77,7 +93,10 @@ function run_backup {
 
 # Set the hostname to the node name when used with Docker Swarm
 NODE_NAME=$(curl -s --unix-socket /var/run/docker.sock http:/v1.26/info | jq -r ".Name")
-if [[ "$NODE_NAME" != "" ]] ; then HOSTNAME="$NODE_NAME" ; fi
+if [[ "$NODE_NAME" != "" ]] ; then
+	echo "[INFO] Swarm mode detected, using node name $NODE_NAME as hostname"
+	HOSTNAME="$NODE_NAME"
+fi
 
 # When used with SFTP
 if [[ "$RESTIC_REPOSITORY" = sftp:* ]] ; then
@@ -112,6 +131,6 @@ if [ $? == 0 ] ; then
 		done
 	fi
 else
-	echo "[ERROR] Unable to connect to repository"
+	echo "[ERROR] Unable to connect to repository (error code $?)"
 	exit 1
 fi
