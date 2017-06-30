@@ -69,6 +69,7 @@ services :
       - SFTP_KEY=/run/secrets/private.key
       - RESTIC_PASSWORD=/run/secrets/restic.password
       - RESTIC_REPOSITORY=sftp:myuser@myhost.com:restic
+      - SLACK_URL=https://hooks.slack.com/services/ABCDE/FGHIJ/KLMNOPQRSTUVWXYZ
     secrets:
       - private.key
       - restic.password
