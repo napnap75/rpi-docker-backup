@@ -121,6 +121,9 @@ if [ $? == 0 ] ; then
 		start_time=$(($RANDOM % 7)):$(($RANDOM % 60))
 		echo "[INFO] Backup would have started at $start_time every day"
 		run_backup
+		if [[ "$SLACK_URL" != "" ]] ; then
+			curl -X POST --data-urlencode 'payload={"username": "rpi-docker-backup", "text": "Backup finished on host $HOSTNAME"}' $SLACK_URL
+		fi
 	else
 		# Run everyday at $start_time
 		start_time=$(($RANDOM % 7)):$(($RANDOM % 60))
@@ -128,9 +131,15 @@ if [ $? == 0 ] ; then
 		while true ; do
 			sleep_until $start_time
 			run_backup
+			if [[ "$SLACK_URL" != "" ]] ; then
+				curl -X POST --data-urlencode 'payload={"username": "rpi-docker-backup", "text": "Backup finished on host $HOSTNAME"}' $SLACK_URL
+			fi
 		done
 	fi
 else
 	echo "[ERROR] Unable to connect to repository (error code $?)"
+	if [[ "$SLACK_URL" != "" ]] ; then
+		curl -X POST --data-urlencode 'payload={"username": "rpi-docker-backup", "text": "Unable to connect to repository $RESTIC_REPOSITORY while trying to run the backup on host $HOSTNAME"}' $SLACK_URL
+	fi
 	exit 1
 fi
