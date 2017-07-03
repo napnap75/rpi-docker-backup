@@ -54,7 +54,8 @@ function check_connection {
 function backup_dir {
 	# Check if the dir to backup is mounted as a subdirectory of /root inside this container
 	if [ -d "/root_fs$1" ] ; then
-		restic backup /root_fs$1
+		echo "[DEBUG] restic --hostname $2 backup /root_fs$1"
+		restic --hostname $2 backup /root_fs$1
 	else
 		echo "[ERROR] Directory" $1 "not found. Have you mounted the root fs from your host with the following option : '-v /:/root_fs:ro' ?"
 	fi
@@ -75,7 +76,7 @@ function run_backup {
 		if $(echo $container | jq ".Labels | has(\"napnap75.backup.dirs\")") ; then
 			for dir_name in $(echo $container | jq -r ".Labels | .[\"napnap75.backup.dirs\"]") ; do
 				echo "[INFO] Backing up dir" $dir_name "for container" $container_name
-				backup_dir $dir_name
+				backup_dir $dir_name $1
 			done
 		fi
 
@@ -85,7 +86,7 @@ function run_backup {
 				if [ $namespace != "null" ] ; then volume_name="${namespace}_${volume_name}" ; fi
 				volume_mount=$(echo $container | jq -r ".Mounts[] | select(.Name==\"$volume_name\") | .Source")
 				echo "[INFO] Backing up volume" $volume_name "with mount" $volume_mount "for container" $container_name
-				backup_dir $volume_mount
+				backup_dir $volume_mount $1
 			done
 		fi
 	done
@@ -120,7 +121,7 @@ if [ $? == 0 ] ; then
 		# Run only once, mainly for tests purpose
 		start_time=$(($RANDOM % 7)):$(($RANDOM % 60))
 		echo "[INFO] Backup would have started at $start_time every day"
-		run_backup
+		run_backup $HOSTNAME
 		if [[ "$SLACK_URL" != "" ]] ; then
 			curl -X POST --data-urlencode "payload={\"username\": \"rpi-docker-backup\", \"text\": \"Backup finished on host $HOSTNAME\"}" $SLACK_URL
 		fi
@@ -130,7 +131,7 @@ if [ $? == 0 ] ; then
 		echo "[INFO] Backup will start at $start_time every day"
 		while true ; do
 			sleep_until $start_time
-			run_backup
+  		run_backup $HOSTNAME
 			if [[ "$SLACK_URL" != "" ]] ; then
 				curl -X POST --data-urlencode "payload={\"username\": \"rpi-docker-backup\", \"text\": \"Backup finished on host $HOSTNAME\"}" $SLACK_URL
 			fi
