@@ -94,7 +94,7 @@ function run_backup {
 # Set the hostname to the node name when used with Docker Swarm
 NODE_NAME=$(curl -s --unix-socket /var/run/docker.sock http:/v1.26/info | jq -r ".Name")
 if [[ "$NODE_NAME" != "" ]] ; then
-	echo "[INFO] Swarm mode detected, using node name $NODE_NAME as hostname"
+	echo "[INFO] Swarm mode detected, using node name $NODE_NAME instead of $HOSTNAME as hostname"
 	HOSTNAME="$NODE_NAME"
 fi
 
@@ -122,7 +122,7 @@ if [ $? == 0 ] ; then
 		echo "[INFO] Backup would have started at $start_time every day"
 		run_backup
 		if [[ "$SLACK_URL" != "" ]] ; then
-			curl -X POST --data-urlencode 'payload={"username": "rpi-docker-backup", "text": "Backup finished on host $HOSTNAME"}' $SLACK_URL
+			curl -X POST --data-urlencode "payload={\"username\": \"rpi-docker-backup\", \"text\": \"Backup finished on host $HOSTNAME\"}" $SLACK_URL
 		fi
 	else
 		# Run everyday at $start_time
