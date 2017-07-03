@@ -7,7 +7,7 @@ This image is based [my own Alpine Linux base image](https://hub.docker.com/r/na
 This image contains :
 - [Restic](https://restic.github.io/).
 
-This image runs a backup every night (between midnight and 7 AM) of the following parts of all the containers running on the host :
+This image runs a backup every night (between midnight and 7 AM) on all the containers running on the host. For each container, the script will backup the followin parts (depending of the container labels) :
 - The volumes specified by the label `napnap75.backup.volumes`
 - The directories specified by the label `napnap75.backup.dirs`
 
@@ -32,6 +32,9 @@ This image runs a backup every night (between midnight and 7 AM) of the followin
 On your other containers (because the Docker socket is mounted on the backup container, the script will be able to read it directly), add the following labels to tell what to backup :
 - `napnap75.backup.dirs=%DIRECTORY_ON_THE_HOST%, %ANOTHER_DIRECTORY%` to backup directories from the Docker host
 - `napnap75.backup.volumes=%VOLUME_NAME%, %ANOTHER_VOLUME%` to backup Docker volumes
+
+# Usage (additional functionnalities)
+- The script is able to post a message to a Slack webhook when a backup is finished or failed. Add the `SLACK_URL` environment variable with the URL of your Slack webhook.
 
 # Examples
 ## Backup a directory to a local repo (docker run on a single host)
@@ -66,6 +69,7 @@ services :
       - SFTP_KEY=/run/secrets/private.key
       - RESTIC_PASSWORD=/run/secrets/restic.password
       - RESTIC_REPOSITORY=sftp:myuser@myhost.com:restic
+      - SLACK_URL=https://hooks.slack.com/services/ABCDE/FGHIJ/KLMNOPQRSTUVWXYZ
     secrets:
       - private.key
       - restic.password

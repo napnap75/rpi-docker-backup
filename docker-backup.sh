@@ -95,8 +95,8 @@ function run_backup {
 # Set the hostname to the node name when used with Docker Swarm
 NODE_NAME=$(curl -s --unix-socket /var/run/docker.sock http:/v1.26/info | jq -r ".Name")
 if [[ "$NODE_NAME" != "" ]] ; then
-	echo "[INFO] Swarm mode detected, using node name $NODE_NAME as hostname"
-	HOSTNAME=$NODE_NAME
+	echo "[INFO] Swarm mode detected, using node name $NODE_NAME instead of $HOSTNAME as hostname"
+	HOSTNAME="$NODE_NAME"
 fi
 
 # When used with SFTP
@@ -122,16 +122,25 @@ if [ $? == 0 ] ; then
 		start_time=$(($RANDOM % 7)):$(($RANDOM % 60))
 		echo "[INFO] Backup would have started at $start_time every day"
 		run_backup $HOSTNAME
+		if [[ "$SLACK_URL" != "" ]] ; then
+			curl -X POST --data-urlencode "payload={\"username\": \"rpi-docker-backup\", \"text\": \"Backup finished on host $HOSTNAME\"}" $SLACK_URL
+		fi
 	else
 		# Run everyday at $start_time
 		start_time=$(($RANDOM % 7)):$(($RANDOM % 60))
 		echo "[INFO] Backup will start at $start_time every day"
 		while true ; do
 			sleep_until $start_time
-			run_backup $HOSTNAME
+  		run_backup $HOSTNAME
+			if [[ "$SLACK_URL" != "" ]] ; then
+				curl -X POST --data-urlencode "payload={\"username\": \"rpi-docker-backup\", \"text\": \"Backup finished on host $HOSTNAME\"}" $SLACK_URL
+			fi
 		done
 	fi
 else
 	echo "[ERROR] Unable to connect to repository (error code $?)"
+	if [[ "$SLACK_URL" != "" ]] ; then
+		curl -X POST --data-urlencode "payload={\"username\": \"rpi-docker-backup\", \"text\": \"Unable to connect to repository $RESTIC_REPOSITORY while trying to run the backup on host $HOSTNAME\"}" $SLACK_URL
+	fi
 	exit 1
 fi
