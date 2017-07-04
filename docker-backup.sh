@@ -14,25 +14,28 @@ sleep_until() {
 
 # Check the connection to the host and ensure the repository is created
 function check_connection {
-	# First check if the repository exist and wait if it is locked
+	# First check the repository
 	restic check &> restic_check.log
 
+	# If it is locked, wait and check again
+	sleep_time=10
 	while grep -q "repository is already locked by" restic_check.log ; do
 		echo "[INFO] Repository locked, waiting ..."
-		sleep $(($RANDOM % 60))
+		sleep $(($sleep_time + $RANDOM % 60))
+		sleep_time=$(($sleep_time * 2))
 		restic check &> restic_check.log
 	done
 
-	# If the repository does not exist, create it (and ignore any other kind of error)
+	# If it does not exist, create it (and ignore any other kind of error)
 	if grep -q "Is there a repository at the following location" restic_check.log ; then
 		# Wait a random amount of time to make sure two nodes will not try to do it at the same time
 		echo "[INFO] Repository not found, waiting a bit before trying to create it ..."
 		sleep $(($RANDOM % 300))
 
-		# Check again to make sure the repository has not been initialised while waiting
+		# Check again to make sure it has not been initialised while waiting
 		restic check &> restic_check.log
 		if grep -q "Is there a repository at the following location" restic_check.log ; then
-			# Manually create the repository
+			# Then manually create it
 			echo "[INFO] ... It's time, creating it"
 			restic init
 			if [ $? -ne 0 ]; then
@@ -57,7 +60,7 @@ function backup_dir {
 		echo "[DEBUG] restic --hostname $2 backup /root_fs$1"
 		restic --hostname $2 backup /root_fs$1
 	else
-		echo "[ERROR] Directory" $1 "not found. Have you mounted the root fs from your host with the following option : '-v /:/root_fs:ro' ?"
+		echo "[ERROR] Directory $1 not found. Have you mounted the root fs from your host with the following option : '-v /:/root_fs:ro' ?"
 	fi
 }
 
@@ -106,7 +109,8 @@ if [[ "$RESTIC_REPOSITORY" = sftp:* ]] ; then
 	chmod 400 /tmp/foreign_host_key
 	SFTP_KEY=/tmp/foreign_host_key
 
-	if [ ! -d "/root/.ssh" ] ; then mkdir /root/.ssh ; fi
+	# Initialize the SSH config file with the values provided in the environment
+	mkdir -p /root/.ssh
 	echo "Host $SFTP_HOST" > /root/.ssh/config
 	if [[ "$SFTP_PORT" != "" ]] ; then echo "Port $SFTP_PORT" >> /root/.ssh/config ; fi
 	echo "IdentityFile $SFTP_KEY" >> /root/.ssh/config
@@ -119,8 +123,7 @@ check_connection
 if [ $? == 0 ] ; then
 	if [ "$1" == "run-once" ] ; then
 		# Run only once, mainly for tests purpose
-		start_time=$(($RANDOM % 7)):$(($RANDOM % 60))
-		echo "[INFO] Backup would have started at $start_time every day"
+		echo "[INFO] Starting backup immediatly"
 		run_backup $HOSTNAME
 		if [[ "$SLACK_URL" != "" ]] ; then
 			curl -X POST --data-urlencode "payload={\"username\": \"rpi-docker-backup\", \"text\": \"Backup finished on host $HOSTNAME\"}" $SLACK_URL
@@ -131,7 +134,7 @@ if [ $? == 0 ] ; then
 		echo "[INFO] Backup will start at $start_time every day"
 		while true ; do
 			sleep_until $start_time
-  		run_backup $HOSTNAME
+			run_backup $HOSTNAME
 			if [[ "$SLACK_URL" != "" ]] ; then
 				curl -X POST --data-urlencode "payload={\"username\": \"rpi-docker-backup\", \"text\": \"Backup finished on host $HOSTNAME\"}" $SLACK_URL
 			fi
