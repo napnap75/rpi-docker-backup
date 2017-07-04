@@ -6,7 +6,13 @@ notifications:
   slack:
     secure: mrXbVD2ooCXA5gZ5qreaW+v1Ued6ybBa/C29iZobiRB347tv5fK4oIY2tO15wUOL7jNNyw9KVhklh/K2Z4YvZRBeNAAU2Na9gDiNRMhbku6N7eHtPK2MyfZU1XkJO4nU8fUJiXd8v2E9FYApmmoDkLw6blamQ/8a0nQtrM6+t/rug0AU/e+cdpu/omyVsq9cqzLhnNhSuKNYd6t846BdBw9IRCANlK2kQCd25ZOEI1wBciT3wOoLLCm1Kgrc60w1whclB2Vh8wIG2nX+OhtaGlPjQtlcQW3w/4DifZS2PwslcdogZPE2P0mF89NqV/YiTDyP3GtRX4Yw0+MqB1nNRSyyReEXaPVRW1ku85MBAvKfTgiZwzzTNUPdOqEMcgCZcCmzRgooHzD5lVdp+7jGD4QU9ga/E9mbvJORJKnLd9BG/aWlcDLHG0jNm5Kn9/2zKWOPBchg+QaTo7CMoQruLVLKC+rEUNK/vPk6JOytsZp0TylG91Bwp5TYCRSws2/AtYlMaIWJP2du+r+Ia1IPEga+oWJUCIzXEAvESTXrberv3KmO6jd4WVzBLVN9EhxDxD1AvzYB3rog2b26UP8xOHi2uV6EsNj8RbZfBCil2O3NrGpEF4eRyLeA4aH6htsQmjlMyQ3LX6shny8NZcCpjMw2BtKxrci17vcFuMivChI=
     on_success: change
-
+  
+# Install the latest Docker version to allow multi-stage builds
+before_install:
+  - sudo apt-get update
+  - sudo apt-get -y -o Dpkg::Options::="--force-confnew" install docker-ce
+  - docker --version
+  
 # Install QEmu to allow Travis (on x86 systems) to build ARM images
 install:
   - docker run --rm --privileged multiarch/qemu-user-static:register
