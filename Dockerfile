@@ -12,7 +12,7 @@ RUN apk add --no-cache curl jq \
 FROM napnap75/rpi-alpine-base:latest
 
 # Download the required software
-RUN apk add --no-cache curl openssh-client
+RUN apk add --no-cache curl jq openssh-client
 
 # Define default command
 COPY --from=builder restic /usr/bin
