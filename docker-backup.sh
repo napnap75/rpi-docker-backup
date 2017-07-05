@@ -20,9 +20,10 @@ function check_connection {
 	# If it is locked, wait and check again
 	sleep_time=10
 	while grep -q "repository is already locked by" restic_check.log ; do
-		echo "[INFO] Repository locked, waiting ..."
+		echo "[INFO] Repository locked, waiting ... and trying to unlock before trying to check again"
 		sleep $(($sleep_time + $RANDOM % 60))
 		sleep_time=$(($sleep_time * 2))
+		restic unlock
 		restic check &> restic_check.log
 	done
 
@@ -60,8 +61,9 @@ function backup_dir {
 		echo "[DEBUG] restic --hostname $2 backup /root_fs$1"
 		restic --hostname $2 backup /root_fs$1 &> restic_check.log
 		while grep -q "repository is already locked by" restic_check.log ; do
-			echo "[INFO] Repository locked, waiting ..."
+			echo "[INFO] Repository locked, waiting ... and trying to unlock before trying to backup again"
 			sleep $(($RANDOM % 600))
+			restic unlock
 			restic --hostname $2 backup /root_fs$1 &> restic_check.log
 		done
 		cat restic_check.log
