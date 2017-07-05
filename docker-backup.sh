@@ -58,7 +58,13 @@ function backup_dir {
 	# Check if the dir to backup is mounted as a subdirectory of /root inside this container
 	if [ -d "/root_fs$1" ] ; then
 		echo "[DEBUG] restic --hostname $2 backup /root_fs$1"
-		restic --hostname $2 backup /root_fs$1
+		restic --hostname $2 backup /root_fs$1 &> restic_check.log
+		while grep -q "repository is already locked by" restic_check.log ; do
+			echo "[INFO] Repository locked, waiting ..."
+			sleep $(($RANDOM % 600))
+			restic --hostname $2 backup /root_fs$1 &> restic_check.log
+		done
+		cat restic_check.log
 	else
 		echo "[ERROR] Directory $1 not found. Have you mounted the root fs from your host with the following option : '-v /:/root_fs:ro' ?"
 	fi
@@ -126,7 +132,7 @@ if [ $? == 0 ] ; then
 		echo "[INFO] Starting backup immediatly"
 		run_backup $HOSTNAME
 		if [[ "$SLACK_URL" != "" ]] ; then
-			curl -X POST --data-urlencode "payload={\"username\": \"rpi-docker-backup\", \"text\": \"Backup finished on host $HOSTNAME\"}" $SLACK_URL
+			curl -s -X POST --data-urlencode "payload={\"username\": \"rpi-docker-backup\", \"text\": \"Backup finished on host $HOSTNAME\"}" $SLACK_URL
 		fi
 	else
 		# Run everyday at $start_time
@@ -136,14 +142,14 @@ if [ $? == 0 ] ; then
 			sleep_until $start_time
 			run_backup $HOSTNAME
 			if [[ "$SLACK_URL" != "" ]] ; then
-				curl -X POST --data-urlencode "payload={\"username\": \"rpi-docker-backup\", \"text\": \"Backup finished on host $HOSTNAME\"}" $SLACK_URL
+				curl -s -X POST --data-urlencode "payload={\"username\": \"rpi-docker-backup\", \"text\": \"Backup finished on host $HOSTNAME\"}" $SLACK_URL
 			fi
 		done
 	fi
 else
 	echo "[ERROR] Unable to connect to repository (error code $?)"
 	if [[ "$SLACK_URL" != "" ]] ; then
-		curl -X POST --data-urlencode "payload={\"username\": \"rpi-docker-backup\", \"text\": \"Unable to connect to repository $RESTIC_REPOSITORY while trying to run the backup on host $HOSTNAME\"}" $SLACK_URL
+		curl -s -X POST --data-urlencode "payload={\"username\": \"rpi-docker-backup\", \"text\": \"Unable to connect to repository $RESTIC_REPOSITORY while trying to run the backup on host $HOSTNAME\"}" $SLACK_URL
 	fi
 	exit 1
 fi
