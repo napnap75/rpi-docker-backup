@@ -5,7 +5,7 @@ FROM napnap75/rpi-alpine-base:latest as builder
 RUN apk add --no-cache git musl-dev go \
   && git clone https://github.com/restic/restic \
   && cd restic \
-  && go run build.go
+  && go run build.go -tags debug
 
 # Final image
 FROM napnap75/rpi-alpine-base:latest
