@@ -1,6 +1,9 @@
 build:
 	docker build -t napnap75/rpi-docker-backup:latest .
 
+build-debug:
+	docker build -t napnap75/rpi-docker-backup:debug -f Dockerfile.debug .
+
 test: build
 	echo "1234567890" > restic_pass
 	mkdir -p backup

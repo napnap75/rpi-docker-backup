@@ -125,6 +125,14 @@ if [[ "$RESTIC_REPOSITORY" = sftp:* ]] ; then
 	echo "StrictHostKeyChecking no" >> /root/.ssh/config
 fi
 
+# When used with S3
+if [[ "$AWS_ACCESS_KEY_ID" = /* ]] ; then
+	AWS_ACCESS_KEY_ID=$(cat $AWS_ACCESS_KEY_ID)
+fi
+if [[ "$AWS_SECRET_ACCESS_KEY" = /* ]] ; then
+	AWS_SECRET_ACCESS_KEY=$(cat $AWS_SECRET_ACCESS_KEY)
+fi
+
 # First check the connection and the repository
 echo "[INFO] Trying to connect to repository"
 check_connection

@@ -23,10 +23,14 @@ This image runs a backup every night (between midnight and 7 AM) on all the cont
 6. Set `RESTIC_REPOSITORY` environment variable to the path (inside the container) of this directory.
 
 ## SFTP backup
-5. Set the `RESTIC_REPOSITORY` environment variable to the form `sftp:USERNAME_ON_THE_REMOTE_HOST@%NAME_OFF_THE_REMOTE_HOST%:%DIRECTORY_WHERE_TO_BACKUP_ON_THE_REMOTE_HOST%`.
+5. Set the `RESTIC_REPOSITORY` environment variable to the form `sftp:%USERNAME_ON_THE_REMOTE_HOST%@%NAME_OFF_THE_REMOTE_HOST%:%DIRECTORY_WHERE_TO_BACKUP_ON_THE_REMOTE_HOST%`.
 6. Set the `SFTP_HOST` environment variable to the name of the remote host.
 7. Set the `SFTP_KEY` environment variable to the name of a file containing the SSH key that will be used to connect to the remote host. I advise to make this key available through Docker Swarm secrets.
 8. If it's not 22, set the `SFTP_PORT` environment variable to the SSH port number on the remote host.
+
+## S3 backup
+5. Set the `RESTIC_REPOSITORY` environment variable to the form `s3:%URL_OF_YOUR_S3_BUCKET%`.
+6. Set the `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` variables to your access and secret key (these values could be the name of a file on the disk containing the secret, especially to use with Docker Swarm secrets).
 
 # Usage (telling what to backup)
 On your other containers (because the Docker socket is mounted on the backup container, the script will be able to read it directly), add the following labels to tell what to backup :
