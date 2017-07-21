@@ -1,0 +1,35 @@
+#!/bin/bash
+
+# Set the hostname to the node name when used with Docker Swarm
+NODE_NAME=$(curl -s --unix-socket /var/run/docker.sock http:/v1.26/info | jq -r ".Name")
+if [[ "$NODE_NAME" != "" ]]; then
+	echo "[INFO] Swarm mode detected, using node name $NODE_NAME instead of $HOSTNAME as hostname"
+
+	found=false
+	skip-next=false
+	for option in "$@"
+	do
+		if $skip-next ; then
+			skip-next=false
+		elif [[ "$option" = --* ]]; then
+			if [[ "$option" == "--hostname" ]]; then
+				break
+			else
+				skip-next=true
+			fi
+		else
+			if [[ "$option" == "backup" ]]; then
+				found=true
+				break
+			fi
+		fi
+	done
+
+	if $found ; then
+		/usr/bin/restic --hostname $NODE_NAME $*
+	else
+		/usr/bin/restic $*
+	fi
+else
+	/usr/bin/restic $*
+fi
