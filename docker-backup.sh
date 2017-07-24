@@ -16,8 +16,6 @@ sleep_until() {
 function check_connection {
 	# First check the repository
 	restic check &> restic_check.log
-echo ">>>> check_connection :"
-cat restic_check.log
 
 	# If it is locked, wait and check again
 	sleep_time=10
@@ -125,8 +123,6 @@ if [[ "$RESTIC_REPOSITORY" = sftp:* ]] ; then
 	if [[ "$SFTP_PORT" != "" ]] ; then echo "Port $SFTP_PORT" >> /root/.ssh/config ; fi
 	echo "IdentityFile $SFTP_KEY" >> /root/.ssh/config
 	echo "StrictHostKeyChecking no" >> /root/.ssh/config
-echo ">>>> SFTP :"
-cat /root/.ssh/config
 fi
 
 # First check the connection and the repository
