@@ -76,6 +76,7 @@ function backup_dir {
 				cat restic_check.log
 				return 0
 			fi
+		done
 	else
 		echo "[ERROR] Directory $1 not found. Have you mounted the root fs from your host with the following option : '-v /:/root_fs:ro' ?"
 		return -1
@@ -84,8 +85,8 @@ function backup_dir {
 
 # Find all the directories to backup and call backup_dir for each one
 function run_backup {
-	count_success = 0
-	count_failure = 0
+	count_success=0
+	count_failure=0
 	
 	# List all the containers
 	containers=$(curl -s --unix-socket /var/run/docker.sock http:/v1.26/containers/json)
