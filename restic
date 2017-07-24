@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# When used with S3
+if [[ "$AWS_ACCESS_KEY_ID" = /* && -f "$AWS_ACCESS_KEY_ID" ]] ; then
+	AWS_ACCESS_KEY_ID=$(cat $AWS_ACCESS_KEY_ID)
+fi
+if [[ "$AWS_SECRET_ACCESS_KEY" = /* && -f "$AWS_SECRET_ACCESS_KEY" ]] ; then
+	AWS_SECRET_ACCESS_KEY=$(cat $AWS_SECRET_ACCESS_KEY)
+fi
+
+/usr/bin/restic $*

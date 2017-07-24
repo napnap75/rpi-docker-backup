@@ -16,5 +16,6 @@ RUN apk add --no-cache curl jq openssh-client
 
 # Define default command
 COPY --from=builder restic /usr/bin
+COPY restic /usr/local/bin
 COPY docker-backup.sh /usr/bin
 CMD ["/usr/bin/docker-backup.sh"]

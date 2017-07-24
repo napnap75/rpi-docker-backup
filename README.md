@@ -40,6 +40,13 @@ On your other containers (because the Docker socket is mounted on the backup con
 # Usage (additional functionnalities)
 - The script is able to post a message to a Slack webhook when a backup is finished or failed. Add the `SLACK_URL` environment variable with the URL of your Slack webhook.
 
+# Usage (troubleshooting / managing backups)
+If you want to troubleshoot or manage your backups, run `docker exec -it %NAME_OF_YOUR_CONTAINER% bash` with a running container and use the `restic` command (see https://restic.readthedocs.io/en/stable/manual.html) :
+- In case of a problem with the repository use `restic check`, `restic prune` or `restic rebuild-index`.
+- To reduce the size of the repository use `restic forget --prune`.
+- To restore some backup use `restic restore`.
+
+
 # Examples
 ## Backup a directory to a local repo (docker run on a single host)
 1. Run the backup script container : `docker run -v /home/backup:/restic_repo -e "RESTIC_REPOSITORY=/restic_repo" -v /home/backup/password:/restic_pass -e "RESTIC_PASSWORD=/restic_pass" -v /var/run/docker.sock:/var/run/docker.sock:ro -v /:/root_fs:ro napnap75/rpi-docker-backup:latest`
