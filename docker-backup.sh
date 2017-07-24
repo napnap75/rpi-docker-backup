@@ -28,14 +28,14 @@ function check_connection {
 	done
 
 	# If it does not exist, create it (and ignore any other kind of error)
-	if grep -q "Is there a repository at the following location" restic_check.log ; then
+	if grep -q -E 'Is there a repository at the following location|file does not exist' restic_check.log ; then
 		# Wait a random amount of time to make sure two nodes will not try to do it at the same time
 		echo "[INFO] Repository not found, waiting a bit before trying to create it ..."
 		sleep $(($RANDOM % 300))
 
 		# Check again to make sure it has not been initialised while waiting
 		restic check &> restic_check.log
-		if grep -q "Is there a repository at the following location" restic_check.log ; then
+		if grep -q -E 'Is there a repository at the following location|file does not exist' restic_check.log ; then
 			# Then manually create it
 			echo "[INFO] ... It's time, creating it"
 			restic init
