@@ -35,6 +35,7 @@ script:
   - curl -LSs https://raw.githubusercontent.com/mitchellh/vagrant/master/keys/vagrant > id_rsa_insecure && chmod 600 id_rsa_insecure
   - sleep 30
   - docker run --link sftp-test-server -e "DEBUG_FILES=*" -e "RESTIC_REPOSITORY=sftp:app-admin@sftp-test-server:_data" -v $PWD/restic_pass:/restic_pass -e "RESTIC_PASSWORD=/restic_pass" -v $PWD/id_rsa_insecure:/root/private-key -e "SFTP_KEY=/root/private-key" -e "SFTP_PORT=22" -e "SFTP_HOST=sftp-test-server" --name docker-backup-sftp --label "napnap75.backup.dirs=$PWD/backup" -v /var/run/docker.sock:/var/run/docker.sock:ro -v /:/root_fs:ro -e "SLACK_URL=$SLACK_URL" napnap75/rpi-docker-backup:debug /usr/bin/docker-backup.sh run-once
+  - docker logs -t docker-backup-sftp
   - docker diff sftp-test-server
 
 # If successful, push the images
