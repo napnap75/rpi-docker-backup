@@ -59,21 +59,35 @@ function backup_dir {
 	# Check if the dir to backup is mounted as a subdirectory of /root inside this container
 	if [ -d "/root_fs$1" ] ; then
 		echo "[DEBUG] restic --hostname $2 backup /root_fs$1"
-		restic --hostname $2 backup /root_fs$1 &> restic_check.log
-		while grep -q "repository is already locked by" restic_check.log ; do
-			echo "[INFO] Repository locked, waiting ... and trying to unlock before trying to backup again"
-			sleep $(($RANDOM % 600))
-			restic unlock
+		while true ; do
 			restic --hostname $2 backup /root_fs$1 &> restic_check.log
+			if [ $? -ne 0 ]; then
+				if grep -q "repository is already locked by" restic_check.log ; then 
+					echo "[INFO] Repository locked, waiting ... and trying to unlock before trying to backup again"
+					sleep $(($RANDOM % 600))
+					restic unlock
+					continue
+				else
+					echo "[ERROR] Unable to create repository"
+					cat restic_check.log
+					return $?
+				fi
+			else
+				cat restic_check.log
+				return 0
+			fi
 		done
-		cat restic_check.log
 	else
 		echo "[ERROR] Directory $1 not found. Have you mounted the root fs from your host with the following option : '-v /:/root_fs:ro' ?"
+		return -1
 	fi
 }
 
 # Find all the directories to backup and call backup_dir for each one
 function run_backup {
+	count_success=0
+	count_failure=0
+	
 	# List all the containers
 	containers=$(curl -s --unix-socket /var/run/docker.sock http:/v1.26/containers/json)
 	for container_id in $(echo $containers | jq ".[].Id") ; do
@@ -88,6 +102,11 @@ function run_backup {
 			for dir_name in $(echo $container | jq -r ".Labels | .[\"napnap75.backup.dirs\"]") ; do
 				echo "[INFO] Backing up dir" $dir_name "for container" $container_name
 				backup_dir $dir_name $1
+				if [ $? -ne 0 ]; then
+					((++count_failure))
+				else
+					((++count_success))
+				fi
 			done
 		fi
 
@@ -98,9 +117,18 @@ function run_backup {
 				volume_mount=$(echo $container | jq -r ".Mounts[] | select(.Name==\"$volume_name\") | .Source")
 				echo "[INFO] Backing up volume" $volume_name "with mount" $volume_mount "for container" $container_name
 				backup_dir $volume_mount $1
+				if [ $? -ne 0 ]; then
+					((++count_failure))
+				else
+					((++count_success))
+				fi
 			done
 		fi
 	done
+	
+	if [[ "$SLACK_URL" != "" ]] ; then
+		curl -s -X POST --data-urlencode "payload={\"username\": \"rpi-docker-backup\", \"text\": \"Backup finished on host $HOSTNAME : $count_success succeeded, $count_failure failed\"}" $SLACK_URL
+	fi
 }
 
 # Set the hostname to the node name when used with Docker Swarm
@@ -133,9 +161,6 @@ if [ $? == 0 ] ; then
 		# Run only once, mainly for tests purpose
 		echo "[INFO] Starting backup immediatly"
 		run_backup $HOSTNAME
-		if [[ "$SLACK_URL" != "" ]] ; then
-			curl -s -X POST --data-urlencode "payload={\"username\": \"rpi-docker-backup\", \"text\": \"Backup finished on host $HOSTNAME\"}" $SLACK_URL
-		fi
 	else
 		# Run everyday at $start_time
 		start_time=$(($RANDOM % 7)):$(($RANDOM % 60))
@@ -143,9 +168,6 @@ if [ $? == 0 ] ; then
 		while true ; do
 			sleep_until $start_time
 			run_backup $HOSTNAME
-			if [[ "$SLACK_URL" != "" ]] ; then
-				curl -s -X POST --data-urlencode "payload={\"username\": \"rpi-docker-backup\", \"text\": \"Backup finished on host $HOSTNAME\"}" $SLACK_URL
-			fi
 		done
 	fi
 else
