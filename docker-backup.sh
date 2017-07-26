@@ -16,6 +16,7 @@ sleep_until() {
 function check_connection {
 	# First check the repository
 	restic check &> restic_check.log
+	return_value=$?
 
 	# If it is locked, wait and check again
 	sleep_time=10
@@ -25,6 +26,7 @@ function check_connection {
 		sleep_time=$(($sleep_time * 2))
 		restic unlock
 		restic check &> restic_check.log
+		return_value=$?
 	done
 
 	# If it does not exist, create it (and ignore any other kind of error)
@@ -35,23 +37,19 @@ function check_connection {
 
 		# Check again to make sure it has not been initialised while waiting
 		restic check &> restic_check.log
+		return_value=$?
 		if grep -q -E 'Is there a repository at the following location|file does not exist' restic_check.log ; then
 			# Then manually create it
 			echo "[INFO] ... It's time, creating it"
-			restic init
-			if [ $? -ne 0 ]; then
-				echo "[ERROR] Unable to create repository"
-				return $?
-			fi
+			restic init &> restic_check.log
+			return_value=$?
 		else
 			echo "[INFO] ... Repository has been created while waiting so I have nothing to do"
 		fi
 	fi
-	rm restic_check.log
-
-	# Then check the connection to the repository and return an error to stop the script if the check failed
-	restic check
-	return $?
+	
+	cat restic_check.log
+	return $return_value
 }
 
 # Backup one directory using Restic
