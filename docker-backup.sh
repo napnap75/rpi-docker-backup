@@ -1,13 +1,15 @@
 #!/bin/bash
 
-# Sleep until the given time of the day (or next day)
+# Sleep until the given time of the day (today or the next day)
 sleep_until() {
-	local slp tzoff now
-	local hms=(${1//:/ })
-	printf -v now '%(%s)T' -1
-	printf -v tzoff '%(%z)T\n' $now
-	tzoff=$((0${tzoff:0:1}(3600*${tzoff:1:2}+60*${tzoff:3:2})))
-	slp=$(((86400+(now-now%86400)+10#$hms*3600+10#${hms[1]}*60+${hms[2]}-tzoff-now)%86400))
+	local now next slp
+	now=$(date +%s)
+	next=$(date +%s --date "$1")
+	if [ $now -ge $next ] ; then
+		slp=$(($next-$now+86400))
+	else
+		slp=$(($next-$now))
+	fi
 	printf 'sleep %ss, -> %(%c)T\n' $slp $((now+slp))
 	sleep $slp
 }
