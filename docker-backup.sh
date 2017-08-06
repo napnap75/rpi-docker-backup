@@ -155,7 +155,7 @@ fi
 
 # First check the connection and the repository
 echo "[INFO] Trying to connect to repository"
-check_connection
+if [ $NO_CHECK != "true" ] ; then check_connection ; fi
 if [ $? == 0 ] ; then
 	if [ "$1" == "run-once" ] ; then
 		# Run only once, mainly for tests purpose
