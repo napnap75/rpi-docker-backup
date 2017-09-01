@@ -15,8 +15,9 @@ sleep_until() {
 }
 
 # Check the connection to the host and ensure the repository is created
-function check_connection {
+function check_repository {
 	# First check the repository
+	echo "[INFO] First checking the repository"
 	restic check &> restic_check.log
 	return_value=$?
 
@@ -58,7 +59,6 @@ function check_connection {
 function backup_dir {
 	# Check if the dir to backup is mounted as a subdirectory of /root inside this container
 	if [ -d "/root_fs$1" ] ; then
-		echo "[DEBUG] restic --hostname $2 backup /root_fs$1"
 		while true ; do
 			restic --hostname $2 backup /root_fs$1 &> restic_check.log
 			if [ $? -ne 0 ]; then
@@ -138,7 +138,7 @@ if [[ "$NODE_NAME" != "" ]] ; then
 	HOSTNAME="$NODE_NAME"
 fi
 
-# When used with SFTP
+# When used with SFTP set the SSH configuration file
 if [[ "$RESTIC_REPOSITORY" = sftp:* ]] ; then
 	# Copy the key and make it readable only by the current user to meet SSH security requirements
 	cp $SFTP_KEY /tmp/foreign_host_key
@@ -154,9 +154,14 @@ if [[ "$RESTIC_REPOSITORY" = sftp:* ]] ; then
 fi
 
 # First check the connection and the repository
-echo "[INFO] Trying to connect to repository"
-if [ $NO_CHECK != "true" ] ; then check_connection ; fi
-if [ $? == 0 ] ; then
+check_ok=0
+if [[ "$NO_CHECK" != "true" ]] ; then
+	check_repository
+	check_ok=$?
+fi
+
+# Run the script if everything was fine
+if [ $check_ok == 0 ] ; then
 	if [ "$1" == "run-once" ] ; then
 		# Run only once, mainly for tests purpose
 		echo "[INFO] Starting backup immediatly"
@@ -171,7 +176,7 @@ if [ $? == 0 ] ; then
 		done
 	fi
 else
-	echo "[ERROR] Unable to connect to repository (error code $?)"
+	echo "[ERROR] Unable to check the connection and the repository (error code $check_ok)"
 	if [[ "$SLACK_URL" != "" ]] ; then
 		curl -s -X POST --data-urlencode "payload={\"username\": \"rpi-docker-backup\", \"text\": \"Unable to connect to repository $RESTIC_REPOSITORY while trying to run the backup on host $HOSTNAME\"}" $SLACK_URL
 	fi
