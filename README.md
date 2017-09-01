@@ -1,5 +1,7 @@
 # Status
-[![Build Status](https://travis-ci.org/napnap75/rpi-docker-backup.svg?branch=master)](https://travis-ci.org/napnap75/rpi-docker-backup) [![Image size](https://images.microbadger.com/badges/image/napnap75/rpi-docker-backup.svg)](https://microbadger.com/images/napnap75/rpi-docker-backup "Get your own image badge on microbadger.com") [![Github link](https://assets-cdn.github.com/favicon.ico)](https://github.com/napnap75/rpi-docker-backup) [![Docker hub link](https://www.docker.com/favicon.ico)](https://hub.docker.com/r/napnap75/rpi-docker-backup/)
+[![Github link](https://assets-cdn.github.com/favicon.ico)](https://github.com/napnap75/rpi-docker-backup)
+[![Travis ling](https://cdn.travis-ci.org/images/favicon-076a22660830dc325cc8ed70e7146a59.png)](https://travis-ci.org/napnap75/rpi-docker-backup)
+[![Docker hub link](https://www.docker.com/favicon.ico)](https://hub.docker.com/r/napnap75/rpi-docker-backup/)
 
 # Content
 This image is based [my own Alpine Linux base image](https://hub.docker.com/r/napnap75/rpi-alpine-base/).
