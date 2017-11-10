@@ -127,7 +127,7 @@ function run_backup {
 	done
 	
 	if [[ "$SLACK_URL" != "" ]] ; then
-		curl -s -X POST --data-urlencode "payload={\"username\": \"rpi-docker-backup\", \"text\": \"Backup finished on host $HOSTNAME : $count_success succeeded, $count_failure failed\"}" $SLACK_URL
+		curl -s -X POST --data-urlencode "payload={\"username\": \"rpi-docker-backup\", \"icon_emoji\": \":dvd:\", \"text\": \"Backup finished on host $HOSTNAME : $count_success succeeded, $count_failure failed\"}" $SLACK_URL
 	fi
 }
 
@@ -178,7 +178,7 @@ if [ $check_ok == 0 ] ; then
 else
 	echo "[ERROR] Unable to check the connection and the repository (error code $check_ok)"
 	if [[ "$SLACK_URL" != "" ]] ; then
-		curl -s -X POST --data-urlencode "payload={\"username\": \"rpi-docker-backup\", \"text\": \"Unable to connect to repository $RESTIC_REPOSITORY while trying to run the backup on host $HOSTNAME\"}" $SLACK_URL
+		curl -s -X POST --data-urlencode "payload={\"username\": \"rpi-docker-backup\", \"icon_emoji\": \":dvd:\", \"text\": \"Unable to connect to repository $RESTIC_REPOSITORY while trying to run the backup on host $HOSTNAME\"}" $SLACK_URL
 	fi
 	exit 1
 fi
