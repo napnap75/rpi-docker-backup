@@ -52,8 +52,12 @@ If you want to troubleshoot or manage your backups, run `docker exec -it %NAME_O
 
 # Examples
 ## Backup a directory to a local repo (docker run on a single host)
-1. Run the backup script container : `docker run -v /home/backup:/restic_repo -e "RESTIC_REPOSITORY=/restic_repo" -v /home/backup/password:/restic_pass -e "RESTIC_PASSWORD=/restic_pass" -v /var/run/docker.sock:/var/run/docker.sock:ro -v /:/root_fs:ro napnap75/rpi-docker-backup:latest`
-2. Run a Transmission container and tell the backup script to backup its home directory : `docker run -v /home/transmission:/home -v /home/media:/media --label "napnap75.backup.dirs=/home/transmission" napnap75/rpi-transmission:latest`
+1. Run a Transmission container and tell the backup script to backup its home directory : `docker run -v /home/transmission:/home -v /home/media:/media --label "napnap75.backup.dirs=/home/transmission" napnap75/rpi-transmission:latest`
+2. Run the backup script container : `docker run -v /home/backup:/restic_repo -e "RESTIC_REPOSITORY=/restic_repo" -v /home/backup/password:/restic_pass -e "RESTIC_PASSWORD=/restic_pass" -v /var/run/docker.sock:/var/run/docker.sock:ro -v /:/root_fs:ro napnap75/rpi-docker-backup:latest`
+
+## Backup a MariaDBdatabase to a local repo (docker run on a single host)
+1. Run a MariaDB container and tell the backup script to backup the mysql database : `docker run --name mariadb -e "MYSQL_ROOT_PASSWORD=my-secret-pw" --label "napnap75.backup.database=mysql" -d mariadb`
+2. Run the backup script container and make sure it has access to the database : `docker run -v /home/backup:/restic_repo -e "RESTIC_REPOSITORY=/restic_repo" -v /home/backup/password:/restic_pass -e "RESTIC_PASSWORD=/restic_pass" -v /var/run/docker.sock:/var/run/docker.sock:ro -v /:/root_fs:ro --link mariadb napnap75/rpi-docker-backup:latest`
 
 ## Backup a volume to a sftp repo (docker stack on a swarm)
 This stack file will run one backup instance on each node of the swarm and backup the configuration volume of the portainer container.
