@@ -31,6 +31,9 @@ script:
 # Test it localy
   - docker run -v $PWD/restic_repo:/restic_repo -e "RESTIC_REPOSITORY=/restic_repo" -v $PWD/restic_pass:/restic_pass -e "RESTIC_PASSWORD=/restic_pass" --name docker-backup-local --label "napnap75.backup.dirs=$PWD/backup" -v /var/run/docker.sock:/var/run/docker.sock:ro -v /:/root_fs:ro -e "SLACK_URL=$SLACK_URL" napnap75/rpi-docker-backup:latest /usr/bin/docker-backup.sh run-once
   - ls -al restic_repo
+# Test a database backup
+  - docker run --name mariadb -e "MYSQL_ROOT_PASSWORD=my-secret-pw" --label "napnap75.backup.database=mysql" -d mariadb
+  - docker run -v $PWD/restic_repo:/restic_repo -e "RESTIC_REPOSITORY=/restic_repo" -v $PWD/restic_pass:/restic_pass -e "RESTIC_PASSWORD=/restic_pass" --name docker-backup-database --link mariadb -v /var/run/docker.sock:/var/run/docker.sock:ro -v /:/root_fs:ro -e "SLACK_URL=$SLACK_URL" napnap75/rpi-docker-backup:latest /usr/bin/docker-backup.sh run-once
 # Test it with SFTP
   - docker run -d -p 2021:22 --name sftp-test-server -e SSH_USER_FORCE_SFTP=true jdeathe/centos-ssh:centos-7
   - curl -LSs https://raw.githubusercontent.com/mitchellh/vagrant/master/keys/vagrant > id_rsa_insecure && chmod 600 id_rsa_insecure
