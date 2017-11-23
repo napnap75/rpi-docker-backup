@@ -127,15 +127,20 @@ function run_backup {
 
 		# Backup the databases labelled with "napnap75.backup.databases"
 		if $(echo $container | jq ".Labels | has(\"napnap75.backup.databases\")") ; then
+			database_password=$(curl -s --unix-socket /var/run/docker.sock http:/v1.26/container/$container_id/json | jq -r ".Config.Env[] | match(\"MYSQL_ROOT_PASSWORD=(.*)\")")
+echo $container_id
+echo $(curl -s --unix-socket /var/run/docker.sock http:/v1.26/container/$container_id/json)
+echo $(curl -s --unix-socket /var/run/docker.sock http:/v1.26/container/$container_id/json | jq -r ".Config")
+echo $(curl -s --unix-socket /var/run/docker.sock http:/v1.26/container/$container_id/json | jq -r ".Config.Env[]")
+echo $(curl -s --unix-socket /var/run/docker.sock http:/v1.26/container/$container_id/json | jq -r ".Config.Env[] | match(\"MYSQL_ROOT_PASSWORD=(.*)\")")
 			for database_name in $(echo $container | jq -r ".Labels | .[\"napnap75.backup.databases\"]") ; do
-				database_password=$(curl -s --unix-socket /var/run/docker.sock http:/v1.26/container/$container_id/json | jq -r ".Config.Env[] | match(\"MYSQL_ROOT_PASSWORD=(.*)\")")
 				echo "[INFO] Backing up database" $database_name "with password" $database_password "for container" $container_name
-#				backup_dir $volume_mount $1
-#				if [ $? -ne 0 ]; then
-#					((++count_failure))
-#				else
-#					((++count_success))
-#				fi
+				mysqldump -h"$container_name" -uroot -p"$database_password" $database_name | gzip | restic --hostname $1 backup --stdin --stdin-filename ${container_name}_${database_name}.sql.gz
+				if [ $? -ne 0 ]; then
+					((++count_failure))
+				else
+					((++count_success))
+				fi
 			done
 		fi
 	done
