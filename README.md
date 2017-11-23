@@ -12,6 +12,7 @@ This image contains :
 This image runs a backup every night (between midnight and 7 AM) on all the containers running on the host. For each container, the script will backup the followin parts (depending of the container labels) :
 - The volumes specified by the label `napnap75.backup.volumes`
 - The directories specified by the label `napnap75.backup.dirs`
+- The databases specified by the label `napnap75.backup.databases` (environment variable MYSQL_ROOT_PASSWORD must be set to allow a dump of the database)
 
 # Usage (installation)
 ## Common rules
