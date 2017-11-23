@@ -39,6 +39,7 @@ This image runs a backup every night (between midnight and 7 AM) on all the cont
 On your other containers (because the Docker socket is mounted on the backup container, the script will be able to read it directly), add the following labels to tell what to backup :
 - `napnap75.backup.dirs=%DIRECTORY_ON_THE_HOST%, %ANOTHER_DIRECTORY%` to backup directories from the Docker host
 - `napnap75.backup.volumes=%VOLUME_NAME%, %ANOTHER_VOLUME%` to backup Docker volumes
+- `napnap75.backup.databases=%DATABASE_NAME%, %ANOTHER_DATABASE%` to backup MySQL/MariaDB databases
 
 # Usage (additional functionnalities)
 - The script is able to post a message to a Slack webhook when a backup is finished or failed. Add the `SLACK_URL` environment variable with the URL of your Slack webhook.
