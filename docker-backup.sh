@@ -62,7 +62,7 @@ function backup_dir {
 		while true ; do
 			restic --hostname $2 backup /root_fs$1 &> restic_check.log
 			if [ $? -ne 0 ]; then
-				if grep -q "repository is already locked by" restic_check.log ; then 
+				if grep -q "repository is already locked by" restic_check.log ; then
 					echo "[INFO] Repository locked, waiting ... and trying to unlock before trying to backup again"
 					sleep $(($RANDOM % 600))
 					restic unlock
@@ -83,11 +83,33 @@ function backup_dir {
 	fi
 }
 
+# Backup one file using Restic
+function backup_file {
+	while true ; do
+		cat $1 | restic backup --hostname $3 --stdin --stdin-filename $2 &> restic_check.log
+		if [ $? -ne 0 ]; then
+			if grep -q "repository is already locked by" restic_check.log ; then
+				echo "[INFO] Repository locked, waiting ... and trying to unlock before trying to backup again"
+				sleep $(($RANDOM % 600))
+				restic unlock
+				continue
+			else
+				echo "[ERROR] Unable to create repository"
+				cat restic_check.log
+				return $?
+			fi
+		else
+			cat restic_check.log
+			return 0
+		fi
+	done
+}
+
 # Find all the directories to backup and call backup_dir for each one
 function run_backup {
 	count_success=0
 	count_failure=0
-	
+
 	# List all the containers
 	containers=$(curl -s --unix-socket /var/run/docker.sock http:/v1.26/containers/json)
 	for container_id in $(echo $containers | jq ".[].Id") ; do
@@ -124,8 +146,37 @@ function run_backup {
 				fi
 			done
 		fi
+
+		# Backup the databases labelled with "napnap75.backup.databases"
+		if $(echo $container | jq ".Labels | has(\"napnap75.backup.databases\")") ; then
+			container_id=$(echo $container_id | sed "s/\"//g")
+			database_password=$(curl -s --unix-socket /var/run/docker.sock http:/v1.26/containers/$container_id/json | jq -r ".Config.Env[] | match(\"MYSQL_ROOT_PASSWORD=(.*)\") | .captures[0].string")
+			for database_name in $(echo $container | jq -r ".Labels | .[\"napnap75.backup.databases\"]") ; do
+				echo "[INFO] Backing up database" $database_name "for container" $container_name
+				if [[ "$database_password" != "" ]] ; then
+					exec_id=$(curl -s --unix-socket /var/run/docker.sock -X POST -H "Content-Type: application/json" -d '{"AttachStdout":true,"AttachStderr":true,"Tty":true,"Cmd":["/bin/bash", "-c", "mysqldump -p'$database_password' --databases '$database_name'"]}' http:/v1.26/containers/$container_id/exec | jq ".Id" | sed "s/\"//g")
+				else
+					exec_id=$(curl -s --unix-socket /var/run/docker.sock -X POST -H "Content-Type: application/json" -d '{"AttachStdout":true,"AttachStderr":true,"Tty":true,"Cmd":["/bin/bash", "-c", "mysqldump --databases '$database_name'"]}' http:/v1.26/containers/$container_id/exec | jq ".Id" | sed "s/\"//g")
+				fi
+				curl -s --unix-socket /var/run/docker.sock -X POST -H "Content-Type: application/json" -d '{"Detach":false,"Tty":false}' http:/v1.26/exec/$exec_id/start | gzip > /tmp/database_backup.gz
+				exit_code=$(curl -s --unix-socket /var/run/docker.sock http:/v1.26/exec/$exec_id/json | jq ".ExitCode")
+				if [ $exit_code -ne 0 ]; then
+					echo "[ERROR] Unable to backup database $database_name from container $container_name"
+					cat /tmp/database_backup.gz | gzip -d
+					((++count_failure))
+				else
+					backup_file /tmp/database_backup.gz ${container_name}—${database_name}.sql.gz $1
+					if [ $? -ne 0 ]; then
+						((++count_failure))
+					else
+						((++count_success))
+					fi
+				fi
+				rm /tmp/database_backup.gz
+			done
+		fi
 	done
-	
+
 	if [[ "$SLACK_URL" != "" ]] ; then
 		curl -s -X POST --data-urlencode "payload={\"username\": \"rpi-docker-backup\", \"icon_emoji\": \":dvd:\", \"text\": \"Backup finished on host $HOSTNAME : $count_success succeeded, $count_failure failed\"}" $SLACK_URL
 	fi
