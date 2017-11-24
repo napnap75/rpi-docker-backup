@@ -29,22 +29,26 @@ script:
   - echo "1234567890" > restic_pass
   - mkdir backup ; touch backup/file
 # Test it localy
-  - docker run -v $PWD/restic_repo:/restic_repo -e "RESTIC_REPOSITORY=/restic_repo" -v $PWD/restic_pass:/restic_pass -e "RESTIC_PASSWORD=/restic_pass" --name docker-backup-local --label "napnap75.backup.dirs=$PWD/backup" -v /var/run/docker.sock:/var/run/docker.sock:ro -v /:/root_fs:ro -e "SLACK_URL=$SLACK_URL" napnap75/rpi-docker-backup:latest /usr/bin/docker-backup.sh run-once
+  - docker run -v $PWD/restic_repo:/restic_repo -e "RESTIC_REPOSITORY=/restic_repo" -v $PWD/restic_pass:/restic_pass -e "RESTIC_PASSWORD=/restic_pass" --name docker-backup-local --label "napnap75.backup.dirs=$PWD/backup" -v /var/run/docker.sock:/var/run/docker.sock:ro -v /:/root_fs:ro napnap75/rpi-docker-backup:latest /usr/bin/docker-backup.sh run-once
   - ls -al restic_repo
   - docker stop docker-backup-local && docker rm docker-backup-local
+# Test a influxdb notification
+  - docker run -p 8086:8086 --name influxdb -d influxdb
+  - sleep 30
+  - curl -XPOST http://localhost:8086/query --data-urlencode "q=CREATE DATABASE supervision"
+  - docker logs influxdb
+  - docker run -v $PWD/restic_repo:/restic_repo -e "RESTIC_REPOSITORY=/restic_repo" -v $PWD/restic_pass:/restic_pass -e "RESTIC_PASSWORD=/restic_pass" --name docker-backup-database -v /var/run/docker.sock:/var/run/docker.sock:ro -v /:/root_fs:ro --link influxdb -e "INFLUXDB_URL=http://influxdb:8086/write?db=supervision" napnap75/rpi-docker-backup:latest /usr/bin/docker-backup.sh run-once
 # Test a database backup
   - docker run --name mariadb -e "MYSQL_ROOT_PASSWORD=my-secret-pw" --label "napnap75.backup.databases=mysql" -d mariadb
-  - docker logs mariadb
   - sleep 30
   - docker logs mariadb
-  - docker run -v $PWD/restic_repo:/restic_repo -e "RESTIC_REPOSITORY=/restic_repo" -v $PWD/restic_pass:/restic_pass -e "RESTIC_PASSWORD=/restic_pass" --name docker-backup-database -v /var/run/docker.sock:/var/run/docker.sock:ro -v /:/root_fs:ro -e "SLACK_URL=$SLACK_URL" napnap75/rpi-docker-backup:latest /usr/bin/docker-backup.sh run-once
-  - docker stop docker-backup-database && docker rm docker-backup-database
-  - docker stop mariadb && docker rm mariadb
+  - docker run -v $PWD/restic_repo:/restic_repo -e "RESTIC_REPOSITORY=/restic_repo" -v $PWD/restic_pass:/restic_pass -e "RESTIC_PASSWORD=/restic_pass" --name docker-backup-database -v /var/run/docker.sock:/var/run/docker.sock:ro -v /:/root_fs:ro napnap75/rpi-docker-backup:latest /usr/bin/docker-backup.sh run-once
+  - docker stop docker-backup-database mariadb && docker rm docker-backup-database mariadb
 # Test it with SFTP
   - docker run -d -p 2021:22 --name sftp-test-server -e SSH_USER_FORCE_SFTP=true jdeathe/centos-ssh:centos-7
   - curl -LSs https://raw.githubusercontent.com/mitchellh/vagrant/master/keys/vagrant > id_rsa_insecure && chmod 600 id_rsa_insecure
   - sleep 30
-  - docker run --link sftp-test-server -e "RESTIC_REPOSITORY=sftp:app-admin@sftp-test-server:_data" -v $PWD/restic_pass:/restic_pass -e "RESTIC_PASSWORD=/restic_pass" -v $PWD/id_rsa_insecure:/root/private-key -e "SFTP_KEY=/root/private-key" -e "SFTP_PORT=22" -e "SFTP_HOST=sftp-test-server" --name docker-backup-sftp --label "napnap75.backup.dirs=$PWD/backup" -v /var/run/docker.sock:/var/run/docker.sock:ro -v /:/root_fs:ro -e "SLACK_URL=$SLACK_URL" napnap75/rpi-docker-backup:latest /usr/bin/docker-backup.sh run-once
+  - docker run --link sftp-test-server -e "RESTIC_REPOSITORY=sftp:app-admin@sftp-test-server:_data" -v $PWD/restic_pass:/restic_pass -e "RESTIC_PASSWORD=/restic_pass" -v $PWD/id_rsa_insecure:/root/private-key -e "SFTP_KEY=/root/private-key" -e "SFTP_PORT=22" -e "SFTP_HOST=sftp-test-server" --name docker-backup-sftp --label "napnap75.backup.dirs=$PWD/backup" -v /var/run/docker.sock:/var/run/docker.sock:ro -v /:/root_fs:ro napnap75/rpi-docker-backup:latest /usr/bin/docker-backup.sh run-once
   - docker diff sftp-test-server
 
 # If successful, push the images
