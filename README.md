@@ -88,7 +88,7 @@ services :
       - RESTIC_PASSWORD=/run/secrets/restic.password
       - RESTIC_REPOSITORY=sftp:myuser@myhost.com:restic
       - SLACK_URL=https://hooks.slack.com/services/ABCDE/FGHIJ/KLMNOPQRSTUVWXYZ
-      - SLACK_URL=http://192.168.1.1:8086/write?db=supervision
+      - INFLUXDB_URL=http://192.168.1.1:8086/write?db=supervision
     secrets:
       - private.key
       - restic.password
