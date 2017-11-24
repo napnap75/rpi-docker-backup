@@ -180,6 +180,9 @@ function run_backup {
 	if [[ "$SLACK_URL" != "" ]] ; then
 		curl -s -X POST --data-urlencode "payload={\"username\": \"rpi-docker-backup\", \"icon_emoji\": \":dvd:\", \"text\": \"Backup finished on host $HOSTNAME : $count_success succeeded, $count_failure failed\"}" $SLACK_URL
 	fi
+	if [[ "$INFLUXDB_URL" != "" ]] ; then
+		curl -s -X POST --data-binary "backups,host=$HOSTNAME success=$count_success,failure=$count_failure" $INFLUXDB_URL
+	fi
 }
 
 # Set the hostname to the node name when used with Docker Swarm
@@ -230,6 +233,9 @@ else
 	echo "[ERROR] Unable to check the connection and the repository (error code $check_ok)"
 	if [[ "$SLACK_URL" != "" ]] ; then
 		curl -s -X POST --data-urlencode "payload={\"username\": \"rpi-docker-backup\", \"icon_emoji\": \":dvd:\", \"text\": \"Unable to connect to repository $RESTIC_REPOSITORY while trying to run the backup on host $HOSTNAME\"}" $SLACK_URL
+	fi
+	if [[ "$INFLUXDB_URL" != "" ]] ; then
+		curl -s -X POST --data-binary "backups,host=$HOSTNAME error_code=$check_ok" $INFLUXDB_URL
 	fi
 	exit 1
 fi
