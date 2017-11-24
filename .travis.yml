@@ -34,7 +34,10 @@ script:
   - docker stop docker-backup-local && docker rm docker-backup-local
 # Test a database backup
   - docker run --name mariadb -e "MYSQL_ROOT_PASSWORD=my-secret-pw" --label "napnap75.backup.databases=mysql" -d mariadb
-  - docker run -v $PWD/restic_repo:/restic_repo -e "RESTIC_REPOSITORY=/restic_repo" -v $PWD/restic_pass:/restic_pass -e "RESTIC_PASSWORD=/restic_pass" --name docker-backup-database --link mariadb -v /var/run/docker.sock:/var/run/docker.sock:ro -v /:/root_fs:ro -e "SLACK_URL=$SLACK_URL" napnap75/rpi-docker-backup:latest /usr/bin/docker-backup.sh run-once
+  - docker logs mariadb
+  - sleep 30
+  - docker logs mariadb
+  - docker run -v $PWD/restic_repo:/restic_repo -e "RESTIC_REPOSITORY=/restic_repo" -v $PWD/restic_pass:/restic_pass -e "RESTIC_PASSWORD=/restic_pass" --name docker-backup-database -v /var/run/docker.sock:/var/run/docker.sock:ro -v /:/root_fs:ro -e "SLACK_URL=$SLACK_URL" napnap75/rpi-docker-backup:latest /usr/bin/docker-backup.sh run-once
   - docker stop docker-backup-database && docker rm docker-backup-database
   - docker stop mariadb && docker rm mariadb
 # Test it with SFTP
