@@ -12,7 +12,7 @@ This image contains :
 This image runs a backup every night (between midnight and 7 AM) on all the containers running on the host. For each container, the script will backup the followin parts (depending of the container labels) :
 - The volumes specified by the label `napnap75.backup.volumes`
 - The directories specified by the label `napnap75.backup.dirs`
-- The databases specified by the label `napnap75.backup.databases` (must be a MySQL/MariaDB database and environment variable MYSQL_ROOT_PASSWORD must be set to allow a dump of the database)
+- The databases specified by the label `napnap75.backup.databases` (must be a MySQL/MariaDB database)
 
 # Usage (installation)
 ## Common rules
@@ -39,7 +39,7 @@ This image runs a backup every night (between midnight and 7 AM) on all the cont
 On your other containers (because the Docker socket is mounted on the backup container, the script will be able to read it directly), add the following labels to tell what to backup :
 - `napnap75.backup.dirs=%DIRECTORY_ON_THE_HOST%, %ANOTHER_DIRECTORY%` to backup directories from the Docker host
 - `napnap75.backup.volumes=%VOLUME_NAME%, %ANOTHER_VOLUME%` to backup Docker volumes
-- `napnap75.backup.databases=%DATABASE_NAME%, %ANOTHER_DATABASE%` to backup MySQL/MariaDB databases
+- `napnap75.backup.databases=%DATABASE_NAME%, %ANOTHER_DATABASE%` to backup MySQL/MariaDB databases (the environment variable MYSQL_ROOT_PASSWORD must be set with the root password on localhost or the root user must have no password on localhost)
 
 # Usage (additional functionnalities)
 - The script is able to post a message to a Slack webhook when a backup is finished or failed. Add the `SLACK_URL` environment variable with the URL of your Slack webhook.
@@ -52,13 +52,11 @@ If you want to troubleshoot or manage your backups, run `docker exec -it %NAME_O
 
 
 # Examples
-## Backup a directory to a local repo (docker run on a single host)
-1. Run a Transmission container and tell the backup script to backup its home directory : `docker run -v /home/transmission:/home -v /home/media:/media --label "napnap75.backup.dirs=/home/transmission" napnap75/rpi-transmission:latest`
-2. Run the backup script container : `docker run -v /home/backup:/restic_repo -e "RESTIC_REPOSITORY=/restic_repo" -v /home/backup/password:/restic_pass -e "RESTIC_PASSWORD=/restic_pass" -v /var/run/docker.sock:/var/run/docker.sock:ro -v /:/root_fs:ro napnap75/rpi-docker-backup:latest`
-
-## Backup a MariaDBdatabase to a local repo (docker run on a single host)
-1. Run a MariaDB container and tell the backup script to backup the mysql database : `docker run --name mariadb -e "MYSQL_ROOT_PASSWORD=my-secret-pw" --label "napnap75.backup.database=mysql" -d mariadb`
-2. Run the backup script container and make sure it has access to the database : `docker run -v /home/backup:/restic_repo -e "RESTIC_REPOSITORY=/restic_repo" -v /home/backup/password:/restic_pass -e "RESTIC_PASSWORD=/restic_pass" -v /var/run/docker.sock:/var/run/docker.sock:ro -v /:/root_fs:ro --link mariadb napnap75/rpi-docker-backup:latest`
+## Backup a directory, a volume or a database to a local repo (docker run on a single host)
+1. Run the backup script container : `docker run -v /home/backup:/restic_repo -e "RESTIC_REPOSITORY=/restic_repo" -v /home/backup/password:/restic_pass -e "RESTIC_PASSWORD=/restic_pass" -v /var/run/docker.sock:/var/run/docker.sock:ro -v /:/root_fs:ro napnap75/rpi-docker-backup:latest`
+2. Run a Transmission container and tell the backup script to backup its home directory : `docker run -v /home/transmission:/home -v /home/media:/media --label "napnap75.backup.dirs=/home/transmission" napnap75/rpi-transmission:latest`
+3. Same with a volume : `docker run -v transmission_home:/home -v /home/media:/media --label "napnap75.backup.volumes=transmission_home" napnap75/rpi-transmission:latest`
+4. Run a MariaDB container and tell the backup script to backup the mysql database : `docker run -e "MYSQL_ROOT_PASSWORD=my-secret-pw" --label "napnap75.backup.databases=mysql" -d mariadb`
 
 ## Backup a volume to a sftp repo (docker stack on a swarm)
 This stack file will run one backup instance on each node of the swarm and backup the configuration volume of the portainer container.
