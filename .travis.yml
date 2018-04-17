@@ -22,7 +22,7 @@ install:
 # Build and test the image
 script:
   - docker build -t napnap75/rpi-docker-backup:latest .
-  - docker build -t napnap75/rpi-docker-backup:debug -f Dockerfile.debug .
+#  - docker build -t napnap75/rpi-docker-backup:debug -f Dockerfile.debug .
   - docker images
   - docker run --rm napnap75/rpi-docker-backup:latest restic version
 # Prepare the tests
@@ -58,9 +58,9 @@ after_success:
   - if [ "$TRAVIS_BRANCH" == "master" ]; then
       docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD" ;
       docker push napnap75/rpi-docker-backup:latest ;
-      docker push napnap75/rpi-docker-backup:debug ;
+#      docker push napnap75/rpi-docker-backup:debug ;
       VERSION=$(docker run --rm napnap75/rpi-docker-backup:latest restic version | grep restic | egrep -o "[0-9]+\.[0-9]+\.[0-9]+") ;
       docker tag napnap75/rpi-docker-backup:latest napnap75/rpi-docker-backup:${VERSION} ;
-      docker push napnap75/rpi-docker-backup:${VERSION} ;
+#      docker push napnap75/rpi-docker-backup:${VERSION} ;
     fi
     
