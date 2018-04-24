@@ -11,6 +11,7 @@ notifications:
  
 # Install QEmu to allow Travis (on x86 systems) to build ARM images
 install:
+  - docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
   - docker run --rm --privileged multiarch/qemu-user-static:register
 
 # Build and test the image
