@@ -2,9 +2,9 @@
 FROM napnap75/rpi-alpine-base:latest as builder
 
 # Download the required software
-RUN apk add --no-cache curl jq \
-	&& DOWNLOAD_URL=$(curl -s https://api.github.com/repos/restic/restic/releases/latest | jq -r '.assets[].browser_download_url' | grep "linux_arm\.") \
-	&& curl -L -o restic.bz2 ${DOWNLOAD_URL} \
+RUN apk add --no-cache curl \
+	&& while [ "$DOWNLOAD_URL" == "" ] ; do DOWNLOAD_URL=$(curl -s https://api.github.com/repos/restic/restic/releases/latest | grep "browser_download_url" | grep "linux_arm\." | cut -d\" -f4) ; done \
+	&& curl --retry 3 -L -o restic.bz2 ${DOWNLOAD_URL} \
 	&& bunzip2 restic.bz2 \
 	&& chmod +x restic
 
